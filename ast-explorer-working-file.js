@@ -39,7 +39,7 @@ function createPlugin(babel) {
         const attrsArr = path.node.openingElement.attributes;
         console.log("attribute arr:", attrsArr);
 
-        let attributes = {};
+        let attributes = new Map();
 
         attrsArr.forEach((attr) => {
           console.log("attribute pairing:", attr.name.name, ":", attr.value);
@@ -48,7 +48,8 @@ function createPlugin(babel) {
           // handle attributes with no value / binding (ie. disable/mandatory/selected)
           console.log("attr.value:", attr.value);
           if (attr.value == null) {
-            attributes[attr.name.name] = true;
+            attributes.set(attr.name.name, attr.value.value);
+            // attributes[attr.name.name] = true;
             return; // return instead of continue becasue we're in a forEach function
             // and NOT a FOR loop!
           }
@@ -58,36 +59,46 @@ function createPlugin(babel) {
             console.log("attr is a string literal");
             // attr.value.value
             // attr.name.name
-            attributes[attr.name.name] = attr.value.value;
+            attributes.set(attr.name.name, attr.value.value);
+            //attributes[attr.name.name] = attr.value.value;
             console.log("attributesObj:", attributes);
           }
 
-          // HOW DO WE HANDLE
+          // handle numeric literals:
+          if (
+            t.isJSXExpressionContainer(attr.value) &&
+            t.isNumericLiteral(attr.value.expression)
+          ) {
+            console.log("numeric literal");
+            console.log(attr.name.name, "", attr.value.expression.value);
+            attributes[attr.name.name] = attr.value.expression.value;
+            return;
+          }
 
-          // handle attributes that have a binding in scope
-          if (t.isJSXExpressionContainer(attr.value)) {
+          // handle attributes that have a binding IN FUNCTION SCOPE
+          if (
+            t.isJSXExpressionContainer(attr.value) &&
+            t.isIdentifier(attr.value.expression)
+          ) {
             console.log("attr is a JSX expression container");
             const identifiersObj = path.scope.bindings;
             console.log("id obj", identifiersObj);
-
             //console.log(attr.name.name); ---> this is the name of the JSXAttribute!
-
             // we need the name of the JSXExpression --> attr.value.expression.name
             let bindingIdNode =
               identifiersObj[attr.value.expression.name].path.node;
             console.log(bindingIdNode.id.name, ":", bindingIdNode.init.value);
             // .path.node.id.name
             // .path.node.init.value
-
             attributes[attr.name.name] = bindingIdNode.init.value;
-
             console.log("attributesObj:", attributes);
+            return;
           }
 
           // handle attributes that have a StringLiteral value
         });
 
-        page.set(component, attributes);
+        page.set(component + "s", { [component]: attributes });
         console.log("PAGE:", page);
       },
     },
