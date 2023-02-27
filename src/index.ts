@@ -1,9 +1,44 @@
 import babel from "@babel/core";
-import * as ss from "./lib/ss-component-lib.js";
+import { SS } from "./ss-component-lib.js";
+import * as util from "./util.js";
 
-console.log("ss", ss);
+console.log("SS", SS);
 console.log(babel.template);
 const { template } = babel;
+
+type Expression = Node;
+
+type Attributes = [Node];
+
+interface OpeningEl {
+  type: string;
+  attributes: Attributes;
+  name: {
+    name: string;
+  };
+}
+
+interface Node {
+  name: { name: string };
+  type: string;
+  value?: Node | string;
+  openingElement?: OpeningEl;
+  argument?: {
+    openingElement: OpeningEl;
+  };
+}
+
+interface Scope {
+  bindings: object;
+  path: NodePath;
+}
+
+type NodePath = {
+  buildCodeFrameError: (str: string) => {};
+  container: Node;
+  scope: Scope;
+  node: Node;
+};
 
 const output = babel.transformFileSync("./code.js", {
   plugins: ["syntax-jsx", jsxToSS],
@@ -15,8 +50,8 @@ function jsxToSS() {
   // this is where we track the components insertion order & their children
   const pageArr = new Array();
 
-  function handleAttributes(attrsArr, path) {
-    const attributes = new Object();
+  function handleAttributes(attrsArr: Attributes, path: NodePath) {
+    const attributes = {};
 
     attrsArr.forEach((attr) => {
       // no duplicate attribute names!
@@ -48,10 +83,10 @@ function jsxToSS() {
         t.isJSXExpressionContainer(attr.value) &&
         t.isIdentifier(attr.value.expression)
       ) {
-        const identifiersObj = path.scope.bindings;
+        const identifiersObj = NodePath.scope.bindings;
         if (!Object.keys(identifiersObj).length === 0) {
           let bindingIdNode =
-            identifiersObj[attr.value.expression.name].path.node;
+            identifiersObj[attr.value.expression.name].NodePath.node;
           attributes[attr.name.name] = bindingIdNode.init.value;
         } else {
           // outside scope! HOW DON WE GET THIS!!???
@@ -62,38 +97,22 @@ function jsxToSS() {
     return attributes;
   }
 
-  function getSSComponentCalls(comp, attr, children, path) {
-    console.log("comp:", comp);
-    // jsx is NOT included in the SS library: error!
-    if (!Object.hasOwn(ss, comp)) {
-      throw path.buildCodeFrameError(
-        `ERR: the jsx component: ${comp}, is NOT included in the ss library. Refer to docs to see included components`
-      );
-    }
-
-    // How do we use the comp object and its functions to produce the template we want???
-    const suiteScriptSyntax = `${ss[comp].add(comp)}\n${ss[comp][attr]}`;
-
-    console.log("suiteScriptSyntax:", suiteScriptSyntax);
-
-    return suiteScriptSyntax;
-  }
-
   return {
     name: "jssx",
     visitor: {
-      ReturnStatement(path) {
+      ReturnStatement(NodePath: NodePath) {
         // early return if code is not JSX:
-        const openingEl = path.node.argument.openingElement;
+        const openingEl = NodePath.node.argument.openingElement;
         if (!openingEl || openingEl.type !== "JSXOpeningElement") return;
       },
-      JSXElement(path) {
+      JSXElement(path: NodePath) {
+        let component = path.node.openingElement.name.name;
+
         const attributes = handleAttributes(
           path.node.openingElement.attributes,
           path
         );
 
-        let component = path.node.openingElement.name.name;
         // PascalCase check:
         if (component.charAt(0) !== component.charAt(0).toUpperCase()) {
           throw path.buildCodeFrameError(
@@ -116,7 +135,7 @@ function jsxToSS() {
           console.log("childrenNamesArr:", childrenNamesArr);
           // ensure every unique child name is inside the .possibleChildren prop
           for (const child of childrenNamesArr) {
-            if (ss[component].possibleChildren.includes(child)) {
+            if (SS[component].possibleChildren.includes(child)) {
               throw path.buildCodeFrameError(
                 `ERROR: jsx component: ${component} has an invalid child called: ${child}!`
               );
@@ -130,7 +149,7 @@ function jsxToSS() {
           },
         });
 
-        const ssComponent = getSSComponentCalls(
+        const ssComponent = util.getSSComponentCalls(
           component,
           attributes,
           childrenNamesArr

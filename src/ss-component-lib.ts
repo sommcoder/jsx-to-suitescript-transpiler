@@ -1,111 +1,113 @@
-export { Form, Field, Sublist, Button, Select };
-// each component object contains the functions and property API calls associated with the component
-
-const pageArr: string[] = [];
-
-// if those conditions satisfy they can then be plotted into a Page array from which we can iterate through the array and 'look up' the method or property of the component object to know which SuiteScript API call to make
+import * as util from "./util.js";
 
 interface SS {
-  isPage: boolean;
-  add: object;
-  props: object;
+  Form: {};
+  FieldGroup: {};
+  Sublist: {};
+  Field: {};
+  Select: {};
+  Button: {};
+  Write: () => {};
 }
 
-function createSSComponent(el: object, ss: object) {
-  // component identified: use add() method
-  //
-  //
-}
-
-function checkNextComponent() {
-  // check the possibleChildren component of the current component
-  // if this array does NOT include a match of the next component, throw Error
-}
-
-const Form = {
-  isPage: true,
-  canSelfClose: false,
-  canHaveChildren: true,
-  possibleChildren: ["sublist", "field", "button", "tab", "fieldGroup"],
-  add: (ui: string, title: string) => {
-    return `const ${title} = ${ui}.createForm({
+export const SS: SS = {
+  Form: {
+    isPage: true,
+    canSelfClose: false,
+    canHaveChildren: true,
+    possibleChildren: ["sublist", "field", "button", "tab", "fieldGroup"],
+    add: (ui: string, title: string) => {
+      return `const ${util.createComponentId(title)} = ${ui}.createForm({
       title: ${title},
     });`;
+    },
+    module: (formName: string, path: string) => {
+      return `${formName}.clientScriptModulePath = '${path}';
+      `;
+    },
+    fileId: (formName: string, id: number) => {
+      return `${formName}.clientScriptFileId = ${id};
+      `;
+    },
+    navBar: (formName: string, id: number) => {
+      return `${formName}.clientScriptFileId = ${id};
+      `;
+    },
   },
-  props: [
-    {
-      module: (form: string, path: string) => {
-        return `${form}.clientScriptModulePath = '${path}';
-      `;
-      },
+  // PascalCase
+  FieldGroup: {
+    isPage: false,
+    canSelfClose: false,
+    canHaveChildren: true,
+    possibleChildren: ["field", "button"],
+    possibleParent: ["form", "assistant"],
+    add: (formName: string, label: string, id: string, tab?: string) => {
+      `const ${label.split(" ").join("")} = ${formName}.addFieldGroup({
+        id: ${id},
+        label: ${label},
+     })
+    `;
     },
-    {
-      fileId: (form: string, id: number) => {
-        return `${form}.clientScriptFileId = ${id};
-      `;
-      },
+    single: (name: string) => {
+      return `${name}.isSingleColumn;`;
     },
-    {
-      navBar: (form: string) => {
-        return `${form}.clientScriptFileId = ${id};
-      `;
-      },
+    collapsible: (name: string) => {
+      return `${name}.isCollapsible = true;`;
     },
-  ],
-};
+    collapsed: (name: string) => {
+      return `${name}.isCollapsed;`;
+    },
+    borderHidden: (name: string) => {
+      return `${name}.isBorderHidden = true;`;
+    },
+  },
 
-const Sublist = {
-  isPage: false,
-  canSelfClose: false,
-  canHaveChildren: true,
-  possibleChildren: ["field", "button"],
-  add: (
-    form: string,
-    id: string,
-    tab: string,
-    type: string,
-    label?: string
-  ) => {
-    return `const ${label || id} = ${form}.addSublist({
+  Sublist: {
+    isPage: false,
+    canSelfClose: false,
+    canHaveChildren: true,
+    possibleChildren: ["field", "button"],
+    add: (
+      form: string,
+      id: string,
+      tab: string,
+      type: string,
+      label?: string
+    ) => {
+      return `const ${label || id} = ${form}.addSublist({
       id: 'custpage_${id}',
       ${label ? `label: ${label}` : `label: ${id}`},
       tab: ${tab}
       type: '${type}',
     })`;
-  },
-  props: [
-    {
-      markAll: (sublist: string) => {
-        return `${sublist}.addMarkAllButtons();
-      `;
-      },
     },
-  ],
-};
+    markAll: (sublist: string) => {
+      return `${sublist}.addMarkAllButtons();
+      `;
+    },
+  },
 
-const Field = {
-  isPage: false,
-  canSelfClose: true,
-  canHaveChildren: true,
-  possibleChildren: ["select"],
-  add: (
-    form: string,
-    id: string,
-    type: string,
-    source: string,
-    container: string,
-    label?: string
-  ) => {
-    return `const ${label || id} = ${form}.addField({
+  Field: {
+    isPage: false,
+    canSelfClose: true,
+    canHaveChildren: true,
+    possibleChildren: ["select"],
+    add: (
+      form: string,
+      id: string,
+      type: string,
+      source: string,
+      container: string,
+      label?: string
+    ) => {
+      return `const ${label || id} = ${form}.addField({
       id: 'custpage_${id}',
       ${label ? `label: ${label}` : `label: ${id}`},
       type: '${type}',
       source: '${source}',
       container: '${container}'
     })`;
-  },
-  // props are LOOKED up as they appear in the JSX component
-  props: {
+    },
     mandatory: (field: string, mandatory: boolean) => {
       if (mandatory)
         return `${field}.isMandatory = ${mandatory};
@@ -129,31 +131,26 @@ const Field = {
             ${container ? `container: ${container}` : ""}
      })`;
     },
-
     def: (field: string, def: string) => {
       if (def)
         return `${field}.defaultValue = ${def};
         `;
       else "";
     },
-
     help: (field: string, help: string) => {
       return `${field}.setHelpText({
         help: '${help}'
       })
       `;
     },
-
     max: (field: string, max: number) => {
       return `${field}.maxLength = ${max};
       `;
     },
-
     padding: () => {},
     layout: () => {},
     display: () => {},
     select: () => {},
-
     secret: (
       form: string,
       id: string,
@@ -169,97 +166,82 @@ const Field = {
                 })
       `;
     },
-
     // the id of the field:
     totalling: (sublist: string, id: string) => {
       return `${sublist}.updateTotallingField({
           id: 'custpage_${id}',
     })`;
     },
-
     unique: (sublist: string, id: string) => {
       return `${sublist}.updateUniqueFieldId({
       id: 'custpage_${id}',
     })`;
     },
   },
-};
 
-// Select is a component WITHIN a dropdown Field.
-// field is populated ONLY IF Selected has an immediate parent of Field
-// Select returns void in SuiteScript
-const Select = {
-  isPage: false,
-  canSelfClose: true,
-  canHaveChildren: false,
-  children: null,
-  add: (value: string, text: string, isSelected: boolean, field: string) => {
-    return `${field}.addSelectOption({
+  // Select is a component WITHIN a dropdown Field.
+  // THIS IS A MADE-UP component, it is not a SuiteScript component
+  // BUT in JSSX it is represented as it's own field to allow for better readability.
+  // field is populated ONLY IF Selected has an immediate parent of Field
+  // Select returns void in SuiteScript
+  Select: {
+    isPage: false,
+    canSelfClose: true,
+    canHaveChildren: false,
+    children: null,
+    add: (value: string, text: string, isSelected: boolean, field: string) => {
+      return `${field}.addSelectOption({
                   value : ${value},
                   text : ${text},
                   isSelected: ${isSelected},
             });
 `;
+    },
   },
-};
 
-const Button = {
-  isPage: false,
-  canSelfClose: true,
-  canHaveChildren: false,
-  children: null,
-  add: (form: string, id: string, label: string, func?: string) => {
-    return `const ${label || id} = ${form}.addButton({
+  Button: {
+    isPage: false,
+    canSelfClose: true,
+    canHaveChildren: false,
+    children: null,
+    add: (form: string, id: string, label: string, func?: string) => {
+      return `const ${label || id} = ${form}.addButton({
                 id: 'custpage_${id}',
                 ${label ? `label: ${label}` : `label: ${id}`},
                 ${func ? `func: ${func}` : ""},
             });`;
-  },
-  props: [
-    {
-      disabled: (button: string, path: string) => {
-        return `${button}.clientScriptModulePath = '${path}';
-      `;
-      },
     },
-    {
-      hidden: (button: string, id: string) => {
-        return `${button}.clientScriptFileId = custpage_${id};
+    disabled: (button: string, path: string) => {
+      return `${button}.clientScriptModulePath = '${path}';
       `;
-      },
     },
-    {
-      // can be this
-      submit: (form: string, label: string) => {
-        return `const submitBtn = ${form}.addSubmitButton({
+    hidden: (button: string, id: string) => {
+      return `${button}.clientScriptFileId = custpage_${id};
+      `;
+    },
+    submit: (form: string, label: string) => {
+      return `const submitBtn = ${form}.addSubmitButton({
         ${label ? `label: ${label}` : ""},
       })
       `;
-      },
     },
-
-    {
-      reset: (form: string, label?: string) => {
-        return `const ${label || "resetBtn"} = ${form}.addResetButton({
+    reset: (form: string, label?: string) => {
+      return `const ${label || "resetBtn"} = ${form}.addResetButton({
         label: ${label || "Reset Button"}
       })
       `;
-      },
     },
-    {
-      refresh: (sublist: string) => {
-        return `const refreshBtn = ${sublist}.addRefreshButton();
+    refresh: (sublist: string) => {
+      return `const refreshBtn = ${sublist}.addRefreshButton();
       `;
-      },
     },
-  ],
-};
-
-// creates the Page, whether thats a Form, List or Assistant
-const Write = (res: string, form: string) => {
-  return `
+  },
+  // creates the Page, whether thats a Form, List or Assistant
+  Write: (res: string, form: string) => {
+    return `
     ${res}.writePage({
         pageObject: ${form}
     })  
 `;
+  },
 };

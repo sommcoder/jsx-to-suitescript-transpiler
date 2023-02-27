@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "jssx": "node index.js"
+    "jssx": "node ./lib/index.js"
   },
   "type": "module",
   "author": "Brian Davies",
