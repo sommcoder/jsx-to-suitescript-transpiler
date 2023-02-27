@@ -1,9 +1,9 @@
 export { Form, Field, Sublist, Button, Select };
 // each component object contains the functions and property API calls associated with the component
 
-// we need an object that "remembers" insertion order to map the ui with our components is the correct order
-// first
-const page = new Map();
+const pageArr: string[] = [];
+
+// if those conditions satisfy they can then be plotted into a Page array from which we can iterate through the array and 'look up' the method or property of the component object to know which SuiteScript API call to make
 
 interface SS {
   isPage: boolean;
@@ -17,8 +17,16 @@ function createSSComponent(el: object, ss: object) {
   //
 }
 
+function checkNextComponent() {
+  // check the possibleChildren component of the current component
+  // if this array does NOT include a match of the next component, throw Error
+}
+
 const Form = {
   isPage: true,
+  canSelfClose: false,
+  canHaveChildren: true,
+  possibleChildren: ["sublist", "field", "button", "tab", "fieldGroup"],
   add: (ui: string, title: string) => {
     return `const ${title} = ${ui}.createForm({
       title: ${title},
@@ -48,6 +56,9 @@ const Form = {
 
 const Sublist = {
   isPage: false,
+  canSelfClose: false,
+  canHaveChildren: true,
+  possibleChildren: ["field", "button"],
   add: (
     form: string,
     id: string,
@@ -74,6 +85,9 @@ const Sublist = {
 
 const Field = {
   isPage: false,
+  canSelfClose: true,
+  canHaveChildren: true,
+  possibleChildren: ["select"],
   add: (
     form: string,
     id: string,
@@ -176,6 +190,9 @@ const Field = {
 // Select returns void in SuiteScript
 const Select = {
   isPage: false,
+  canSelfClose: true,
+  canHaveChildren: false,
+  children: null,
   add: (value: string, text: string, isSelected: boolean, field: string) => {
     return `${field}.addSelectOption({
                   value : ${value},
@@ -188,6 +205,9 @@ const Select = {
 
 const Button = {
   isPage: false,
+  canSelfClose: true,
+  canHaveChildren: false,
+  children: null,
   add: (form: string, id: string, label: string, func?: string) => {
     return `const ${label || id} = ${form}.addButton({
                 id: 'custpage_${id}',

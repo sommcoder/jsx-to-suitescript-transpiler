@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "jsx-to-ss": "npx babel --plugins jsx-to-ss-transpiler index.js"
+    "jssx": "node index.js"
   },
   "type": "module",
   "author": "Brian Davies",
