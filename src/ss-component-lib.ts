@@ -1,16 +1,22 @@
 import * as util from "./util.js";
+export { suiteScriptLibrary as SS };
 
-interface SS {
-  Form: {};
-  FieldGroup: {};
-  Sublist: {};
-  Field: {};
-  Select: {};
-  Button: {};
-  Write: () => {};
-}
+// class SS {
+//   [component: string]: {
+//     readonly isPage: boolean;
+//     readonly canSelfClose: boolean;
+//     readonly canHaveChildren: boolean;
+//     readonly possibleChildren: [string];
+//     constructor(add: object, attrFunc: [object]) {
+//         this.add = add;
+//         this.attrFunc = attrFunc;
+//     }
 
-export const SS: SS = {
+//   };
+//   Write: () => {};
+// }
+
+const suiteScriptLibrary = {
   Form: {
     isPage: true,
     canSelfClose: false,

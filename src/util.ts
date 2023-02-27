@@ -1,15 +1,5 @@
 import { SS } from "./ss-component-lib.js";
 
-interface SS {
-  isPage: boolean;
-  add: object;
-  props: object;
-}
-
-interface Attr {
-  id: string;
-}
-
 type Path = {
   buildCodeFrameError: (str: string) => {};
 };
@@ -25,11 +15,15 @@ export function createComponentId(
   }_${page}`;
 }
 
+interface Attribute {
+  id: string;
+}
+
 export function getSSComponentCalls(
   comp: string,
-  attr: [string],
+  attr: Attribute,
   path: Path,
-  children?: [string]
+  children?: string[]
 ) {
   console.log("comp:", comp);
   console.log("attr:", attr);
@@ -45,7 +39,9 @@ export function getSSComponentCalls(
   // need to figure out the best way to Visit and take in the ui-name
 
   // How do we use the comp object and its functions to produce the template we want???
-  const suiteScriptSyntax = `${SS[comp].add(id)}\n${SS[comp][attr]}`;
+  const suiteScriptSyntax = `${SS[comp as keyof typeof SS].add(id)}\n${
+    SS[comp as keyof typeof SS][attr as keyof typeof SS]
+  }`;
 
   console.log("suiteScriptSyntax:", suiteScriptSyntax);
 
