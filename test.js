@@ -14,4 +14,13 @@ function convertToCamelCase(label) {
   else console.log("error:", "error");
 }
 
+function createComponentId(label) {
+  if (label && /^[a-zA-Z0-9_\s]+$/.test(label))
+    return `${"custpage_" + label.trim().toLowerCase().split(" ").join("_")}
+  `;
+  else console.log("error:", "error");
+}
+
 console.log(convertToCamelCase("Quantity Distribution Number"));
+
+console.log(createComponentId("Qty Distribution Number", "Form", "Sublist"));
