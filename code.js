@@ -8,8 +8,6 @@ function Page() {
         <Field label="Rate" type="text" />
         <Field label="Date" type="text" />
         <Field label="Entity" type="select">
-          {/* we may have to consider something special for SELECT.isSelected as it is an attribute but can also be added in the .add() call
-           */}
           <Select value="" text="" isSelected />
           <Select value="" text="" />
           <Select value="" text="" />
@@ -21,3 +19,6 @@ function Page() {
     </Form>
   );
 }
+
+/* we may have to consider something special for SELECT.isSelected as it is an attribute but can also be added in the .add() call
+ */
