@@ -8,39 +8,37 @@ function createPlugin(babel) {
   //////////////////////////// SUITESCRIPT LIBRARY
   const SS = {
     Form: {
-      isPage: true,
-      canSelfClose: false,
-      canHaveChildren: true,
-      possibleChildren: ["Sublist", "Field", "Button", "Tab", "FieldGroup"],
-      possibleParents: null,
-      title: null,
-      varName: null,
-      pageVar: null,
+      // ui comes from outside the scope of the component function
       add: (ui, title, varName) => {
         return `const ${varName} = ${ui}.createForm({
-      title: '${title}',
-    });`;
+        title: '${title}',
+      });`;
       },
-      module: (pageVar, path) => {
-        return `${pageVar}.clientScriptModulePath = '${path}';
-      `;
+      attributes: {
+        isPage: true,
+        canSelfClose: false,
+        canHaveChildren: true,
+        possibleChildren: ["Sublist", "Field", "Button", "Tab", "FieldGroup"],
+        possibleParents: null,
       },
-      fileId: (pageVar, id) => {
-        return `${pageVar}.clientScriptFileId = '${id}';
-      `;
-      },
-      navBar: (pageVar, id) => {
-        return `${pageVar}.clientScriptFileId = '${id}';
-      `;
+      props: {
+        title: null,
+        module: (pageVar, path) => {
+          return `${pageVar}.clientScriptModulePath = '${path}';
+        `;
+        },
+        fileId: (pageVar, id) => {
+          return `${pageVar}.clientScriptFileId = '${id}';
+        `;
+        },
+        navBar: (pageVar, id) => {
+          return `${pageVar}.clientScriptFileId = '${id}';
+        `;
+        },
       },
     },
     // PascalCase
     FieldGroup: {
-      isPage: false,
-      canSelfClose: false,
-      canHaveChildren: true,
-      possibleChildren: ["Field", "Button"],
-      possibleParents: ["Form", "Assistant"],
       add: (pageVar, id, varName, label, tab) => {
         return `const ${varName} = ${pageVar}.addFieldGroup({
         id: '${id}',
@@ -49,25 +47,33 @@ function createPlugin(babel) {
      })
     `;
       },
-      single: (name) => {
-        return `${name}.isSingleColumn;`;
+      attributes: {
+        isPage: false,
+        canSelfClose: false,
+        canHaveChildren: true,
+        possibleChildren: ["Field", "Button"],
+        possibleParents: ["Form", "Assistant"],
       },
-      collapsible: (name) => {
-        return `${name}.isCollapsible = true;`;
-      },
-      collapsed: (name) => {
-        return `${name}.isCollapsed;`;
-      },
-      borderHidden: (name) => {
-        return `${name}.isBorderHidden = true;`;
+      props: {
+        title: null,
+        id: null,
+        label: null,
+        tab: null,
+        single: (name) => {
+          return `${name}.isSingleColumn;`;
+        },
+        collapsible: (name) => {
+          return `${name}.isCollapsible = true;`;
+        },
+        collapsed: (name) => {
+          return `${name}.isCollapsed;`;
+        },
+        borderHidden: (name) => {
+          return `${name}.isBorderHidden = true;`;
+        },
       },
     },
     Sublist: {
-      isPage: false,
-      canSelfClose: false,
-      canHaveChildren: true,
-      possibleChildren: ["Field", "Button"],
-      possibleParents: ["Form", "Assistant", "Tab"],
       add: (pageVar, id, varName, label, type, tab) => {
         return `const ${varName} = ${pageVar}.addSublist({
       id: '${id}',
@@ -76,19 +82,27 @@ function createPlugin(babel) {
       type: '${type}',
     })`;
       },
-      label: null,
-      type: null,
-      markAll: (sublist) => {
-        return `${sublist}.addMarkAllButtons();
-      `;
+      attributes: {
+        isPage: false,
+        canSelfClose: false,
+        canHaveChildren: true,
+        possibleChildren: ["Field", "Button"],
+        possibleParents: ["Form", "Assistant", "Tab"],
+      },
+      props: {
+        label: null,
+        type: null,
+        id: null,
+        tab: null,
+        varName: null,
+        pageVar: null,
+        markAll: (sublist) => {
+          return `${sublist}.addMarkAllButtons();
+        `;
+        },
       },
     },
     Field: {
-      isPage: false,
-      canSelfClose: true,
-      canHaveChildren: true,
-      possibleChildren: ["Select"],
-      possibleParents: ["Form", "Assistant", "Tab", "Sublist", "List"],
       add: (pageVar, id, varName, label, type, source, container) => {
         return `const ${varName} = ${pageVar}.addField({
       id: '${id}',
@@ -98,79 +112,87 @@ function createPlugin(babel) {
       container: '${container}'
     })`;
       },
-      label: null,
-      type: null,
-
-      mandatory: (field, mandatory) => {
-        if (mandatory)
-          return `${field}.isMandatory = ${mandatory};
-        `;
-        else return "";
+      attributes: {
+        isPage: false,
+        canSelfClose: true,
+        canHaveChildren: true,
+        possibleChildren: ["Select"],
+        possibleParents: ["Form", "Assistant", "Tab", "Sublist", "List"],
       },
-      credential: (
-        id,
-        pageVar,
-        domain,
-        varName,
-        scriptIds,
-        restUser,
-        container
-      ) => {
-        return `const ${varName} = ${pageVar}.addCredentialField({
-            id: '${id}',
-            restrictToDomains: '${domain}',
-            ${scriptIds ? `restrictToScriptIds : '${scriptIds}'` : ""},
-            ${restUser ? `restrictToCurrentUser : '${restUser}'` : ""},
-            ${container ? `container: '${container}'` : ""}
-     })`;
-      },
-      def: (field, def) => {
-        if (def) return `${field}.defaultValue = '${def}';        `;
-        else "";
-      },
-      help: (field, help) => {
-        return `${field}.setHelpText({
-        help: '${help}'
-      });
-      `;
-      },
-      max: (field, max) => {
-        return `${field}.maxLength = ${max};
-      `;
-      },
-      source: () => {},
-      padding: () => {},
-      layout: () => {},
-      display: () => {},
-      select: () => {},
-      secret: (pageVar, id, varName, scriptIds, restUser, label) => {
-        return `const ${varName} = ${pageVar}.addSecretKeyField({
-                  id: '${id}',
-                  ${label ? `label: '${label}'` : `label: ${id}`},
-                  restrictToScriptIds: '${scriptIds}',
-                  restrictToCurrentUser: ${restUser || false},
-                })
-      `;
-      },
-      // the id of the field:
-      totalling: (sublistVar, id) => {
-        return `${sublistVar}.updateTotallingField({
-          id: '${id}',
-    })`;
-      },
-      unique: (sublistVar, id) => {
-        return `${sublistVar}.updateUniqueFieldId({
+      props: {
+        label: null,
+        type: null,
+        id: null,
+        pageVar: null,
+        varName: null,
+        source: null,
+        container: null,
+        mandatory: (field, mandatory) => {
+          if (mandatory)
+            return `${field}.isMandatory = ${mandatory};
+    `;
+          else return "";
+        },
+        credential: (
+          id,
+          pageVar,
+          domain,
+          varName,
+          scriptIds,
+          restUser,
+          container
+        ) => {
+          return `const ${varName} = ${pageVar}.addCredentialField({
+        id: '${id}',
+        restrictToDomains: '${domain}',
+        ${scriptIds ? `restrictToScriptIds : '${scriptIds}'` : ""},
+        ${restUser ? `restrictToCurrentUser : '${restUser}'` : ""},
+        ${container ? `container: '${container}'` : ""}
+ })`;
+        },
+        def: (field, def) => {
+          if (def) return `${field}.defaultValue = '${def}';        `;
+          else "";
+        },
+        help: (field, help) => {
+          return `${field}.setHelpText({
+    help: '${help}'
+  });
+  `;
+        },
+        max: (field, max) => {
+          return `${field}.maxLength = ${max};
+  `;
+        },
+        source: () => {},
+        padding: () => {},
+        layout: () => {},
+        display: () => {},
+        select: () => {},
+        secret: (pageVar, id, varName, scriptIds, restUser, label) => {
+          return `const ${varName} = ${pageVar}.addSecretKeyField({
+              id: '${id}',
+              ${label ? `label: '${label}'` : `label: ${id}`},
+              restrictToScriptIds: '${scriptIds}',
+              restrictToCurrentUser: ${restUser || false},
+            })
+  `;
+        },
+        // the id of the field:
+        totalling: (sublistVar, id) => {
+          return `${sublistVar}.updateTotallingField({
       id: '${id}',
-    })`;
+})`;
+        },
+        unique: (sublistVar, id) => {
+          return `${sublistVar}.updateUniqueFieldId({
+  id: '${id}',
+})`;
+        },
       },
     },
 
     Select: {
-      isPage: false,
-      canSelfClose: true,
-      canHaveChildren: false,
-      possibleChildren: null,
-      possibleParents: ["Field"],
       add: (value, text, fieldVar, isSelected = false) => {
         return `${fieldVar}.addSelectOption({
                   value : '${value}',
@@ -179,19 +201,21 @@ function createPlugin(babel) {
             });
 `;
       },
-      fieldVar: null,
-      isSelected: false,
-      value: null,
-      text: null,
-      field: null,
+      attributes: {
+        isPage: false,
+        canSelfClose: true,
+        canHaveChildren: false,
+        possibleChildren: null,
+        possibleParents: ["Field"],
+      },
+      props: {
+        isSelected: false,
+        value: null,
+        text: null,
+        fieldVar: null,
+      },
     },
-
     Button: {
-      isPage: false,
-      canSelfClose: true,
-      canHaveChildren: false,
-      possibleChildren: null,
-      possibleParents: ["Field", "Form", "Assistant"],
       add: (pageVar, id, label, varName, func) => {
         return `const ${varName} = ${pageVar}.addButton({
                 id: '${id}',
@@ -199,37 +223,47 @@ function createPlugin(babel) {
                 ${func ? `func: ${func}` : ""},
             });`;
       },
-      label: null,
-      id: null,
-      varName: null, // the variable name of this button component
-      pageVar: null, // the variable name of the page the button belongs to
-      func: null,
-      disabled: (buttonVar, path) => {
-        return `${buttonVar}.clientScriptModulePath = '${path}';
-      `;
+      attributes: {
+        isPage: false,
+        canSelfClose: true,
+        canHaveChildren: false,
+        possibleChildren: null,
+        possibleParents: ["Field", "Form", "Assistant"],
       },
-      hidden: (buttonVar, id) => {
-        return `${buttonVar}.clientScriptFileId = '${id}';
-      `;
-      },
-      submit: (pageVar, label) => {
-        return `const submitBtn = ${pageVar}.addSubmitButton({
-        ${label ? `label: '${label}'` : ""},
-      })
-      `;
-      },
-      reset: (pageVar, label) => {
-        return `const ${label || "resetBtn"} = ${pageVar}.addResetButton({
-        label: '${label || "Reset Button"}'
-      })
-      `;
-      },
-      refresh: (sublistVar) => {
-        return `const refreshBtn = ${sublistVar}.addRefreshButton();
-      `;
+      props: {
+        label: null,
+        id: null,
+        varName: null, // the variable name of this button component
+        pageVar: null, // the variable name of the page the button belongs to
+        func: null,
+        disabled: (buttonVar, path) => {
+          return `${buttonVar}.clientScriptModulePath = '${path}';
+        `;
+        },
+        hidden: (buttonVar, id) => {
+          return `${buttonVar}.clientScriptFileId = '${id}';
+        `;
+        },
+        submit: (pageVar, label) => {
+          return `const submitBtn = ${pageVar}.addSubmitButton({
+          ${label ? `label: '${label}'` : ""},
+        })
+        `;
+        },
+        reset: (pageVar, label) => {
+          return `const ${label || "resetBtn"} = ${pageVar}.addResetButton({
+          label: '${label || "Reset Button"}'
+        })
+        `;
+        },
+        refresh: (sublistVar) => {
+          return `const refreshBtn = ${sublistVar}.addRefreshButton();
+        `;
+        },
       },
     },
     // creates the Page, whether thats a Form, List or Assistant
+    // always gets called in the plugin
     Write: (res, pageVar) => {
       return `
     ${res}.writePage({
@@ -325,12 +359,17 @@ function createPlugin(babel) {
     console.log("compInput", compInput);
 
     let type = compInput.component.details.compType;
-    let attrArr = compInput.component.details.attrs;
+    let attrObj = compInput.component.details.attrs;
+    let attrArr = Object.keys(attrObj).filter(
+      (attr) => typeof attrObj[attr] !== "object"
+    );
     let id = compInput.component.details.id;
+
+    console.log("attrArr", attrArr);
 
     // page components:
     if (SS[type].isPage) {
-      suiteScriptSyntax = SS[type].add(ui, attrArr.title, varName);
+      suiteScriptSyntax = SS[type].add(ui, attrObj.title, varName);
       SS[type].pageVar = varName; // update state with a pageVar value
     } else {
       // non-page components:
@@ -339,10 +378,17 @@ function createPlugin(babel) {
           SS[type].pageVar,
           id,
           varName,
-          attrArr.type,
-          attrArr.label,
-          attrArr.tab
+          attrObj.type,
+          attrObj.label,
+          attrObj.tab
         );
+
+        // loop through each attribute in the attrObj and += to ssSyntax
+        attrArr.map((attr) => {
+          console.log("attr:", attrObj[attr]);
+
+          // suiteScriptSyntax += SS[type].props[attrObj[attr]], id, varName, attrObj.label, attrObj.type, attrObj.source, attrObj.container);
+        });
       }
       if (type === "Field") {
         // sometimes Field has the Page as a parent, sometimes it has Sublist as parent
@@ -350,10 +396,10 @@ function createPlugin(babel) {
           SS[type].pageVar,
           id,
           varName,
-          attrArr.label,
-          attrArr.type,
-          attrArr.source,
-          attr.container
+          attrObj.label,
+          attrObj.type,
+          attrObj.source,
+          attrObj.container
         );
       }
       if (type === "Button") {
@@ -361,8 +407,8 @@ function createPlugin(babel) {
           SS[type].pageVar,
           id,
           varName,
-          attrArr.label,
-          attrArr.func
+          attrObj.label,
+          attrObj.func
         );
       }
       if (type === "FieldGroup") {
@@ -370,108 +416,105 @@ function createPlugin(babel) {
           SS[type].pageVar,
           id,
           varName,
-          attrArr.type,
-          attrArr.label,
-          attrArr.tab
+          attrObj.type,
+          attrObj.label,
+          attrObj.tab
         );
       }
 
       // handle attribute calls:
-      // SS[comp][attr];
     }
-    //  console.log("suiteScriptSyntax:", suiteScriptSyntax);
-    return suiteScriptSyntax;
   }
 
   function hasValidChildren(childrenNamesArr, comp) {
     return childrenNamesArr.every((child) =>
-      SS[comp].possibleChildren.includes(child)
+      SS[comp].attributes.possibleChildren.includes(child)
     );
   }
 
-  function handleAttributes(comp, attrsArr, path) {
-    let attributes = {}; // new attributes object per component visit
+  function handleprops(comp, propsArr, path) {
+    let properties = {}; // new props object per component visit
 
-    attrsArr.forEach((attr) => {
-      //   console.log(comp);
-      //   console.log(attr);
-      //  console.log("start check:", attributes);
-      const attrName = attr.name.name;
-      const attrValNode = attr.value; // won't exist for some Nodes
-      //   console.log("attrValNode:", attrValNode);
-      const attrValExp = attr.value ? attr.value.expression : null; //  won't exist for some Nodes
+    propsArr.forEach((prop) => {
+      // console.log(comp);
+      // console.log(prop);
+      // console.log("start check:", props);
+      const propName = prop.name.name;
+      const propValNode = prop.value; // won't exist for some Nodes
+      //   console.log("propValNode:", propValNode);
+      const propValExp = prop.value ? prop.value.expression : null; //  won't exist for some Nodes
 
-      // valid attribute of component?
-      console.log(SS[comp].hasOwnProperty(attrName));
-      if (!SS[comp].hasOwnProperty(attrName)) {
+      // valid propibute of component?
+      console.log(SS[comp].props.hasOwnProperty(propName));
+      if (!SS[comp].props.hasOwnProperty(propName)) {
         throw path.buildCodeFrameError(
-          `ERR: The attribute called: '${attrName}' is NOT a valid attribute in the component: '${comp}'`
+          `ERR: The prop called: '${propName}' is NOT a valid prop in the component: '${comp}'`
         );
       }
 
-      //   console.log("attrName:", attrName);
-      if (attrValNode) {
-        //    console.log("attrValNode.value:", attrValNode.value);
-        //     console.log("attrValExp:", attrValExp);
+      //   console.log("propName:", propName);
+      if (propValNode) {
+        //    console.log("propValNode.value:", propValNode.value);
+        //     console.log("propValExp:", propValExp);
       }
       // is duplicate?
-      if (attributes.hasOwnProperty(attrName)) {
+      if (properties.hasOwnProperty(propName)) {
         throw path.buildCodeFrameError(
-          `ERR: there is already an attribute called: '${attrName}' in the component: '${comp}. There cannot be duplicate attributes in a component'`
+          `ERR: there is already an prop called: '${propName}' in the component: '${comp}. There cannot be duplicate props in a component'`
         );
       }
       //   console.log("SS[comp]:", SS[comp]);
-      //  console.log("attrName:", attrName);
-      //  console.log(SS[comp][attrName]);
+      //  console.log("propName:", propName);
+      //  console.log(SS[comp][propName]);
 
       // (ie. disable/mandatory/selected/hidden)
-      if (attrValNode === null) {
-        attributes[attrName] = true;
+      if (propValNode === null) {
+        properties[propName] = true;
         return;
       }
-      //   console.log(t.isStringLiteral(attrValNode));
-      // eg: attribute="yourAttribute"
-      if (t.isStringLiteral(attrValNode)) {
-        // console.log("attrName string literal", attrName);
-        attributes[attrName] = attrValNode.value;
+      //   console.log(t.isStringLiteral(propValNode));
+      // eg: propibute="yourpropibute"
+      if (t.isStringLiteral(propValNode)) {
+        // console.log("propName string literal", propName);
+        properties[propName] = propValNode.value;
         return;
       }
-      // eg: attribute={123}
-      //  console.log("numeric attribute check:", attributes);
+      // eg: propibute={123}
+      //  console.log("numeric propibute check:", props);
       if (
-        t.isJSXExpressionContainer(attrValNode) &&
-        t.isNumericLiteral(attrValExp)
+        t.isJSXExpressionContainer(propValNode) &&
+        t.isNumericLiteral(propValExp)
       ) {
-        //   console.log("attrName numeric:", attrName);
-        //   console.log("attrValExp.value:", attrValExp.value);
-        //   console.log(attributes);
-        attributes[attrName] = attrValExp.value;
-        //    console.log(attributes);
+        //   console.log("propName numeric:", propName);
+        //   console.log("propValExp.value:", propValExp.value);
+        //   console.log(props);
+        properties[propName] = propValExp.value;
+        //    console.log(props);
         return;
       }
-      //  console.log(attributes);
-      // handle attributes that have a binding that is IN the PAGE's FUNCTION SCOPE
+      //  console.log(props);
+      // handle props that have a binding that is IN the PAGE's FUNCTION SCOPE
       if (
-        t.isJSXExpressionContainer(attrValNode) &&
-        t.isIdentifier(attrValExp)
+        t.isJSXExpressionContainer(propValNode) &&
+        t.isIdentifier(propValExp)
       ) {
         const identifiersObj = path.scope.bindings;
-        //   console.log("binding block:", attributes);
+        //   console.log("binding block:", props);
         //   console.log("identifiersObj", identifiersObj);
 
-        // if the identifier object has attrs:
+        // if the identifier object has props:
         if (Object.keys(identifiersObj).length !== 0) {
-          let bindingIdNode = identifiersObj[attrValExp.name].path.node;
+          let bindingIdNode = identifiersObj[propValExp.name].path.node;
           //    console.log("bindingIdNode:", bindingIdNode);
-          attributes[attrName] = bindingIdNode.init.value;
-          //  console.log("post binding check:", attributes);
+          properties[propName] = bindingIdNode.init.value;
+          //  console.log("post binding check:", props);
           return;
         }
         // outside scope! HOW DO WE GET THIS FROM WITHIN THE JSXELEMENT VISITOR?
       }
     });
-    //  console.log("comp attributes return check:", attributes);
-    return attributes;
+    //  console.log("comp props return check:", props);
+    return properties;
   }
 
   //////////////////////////////////////////////////////////////
@@ -486,7 +529,7 @@ function createPlugin(babel) {
     visitor: {
       JSXElement(path) {
         let compType = path.node.openingElement.name.name;
-        let compInput; // what we use to populate
+        let compInput; // Used to populate and pass to getSSComponentCalls
 
         // PascalCase check:
         if (compType.charAt(0) !== compType.charAt(0).toUpperCase()) {
@@ -495,7 +538,7 @@ function createPlugin(babel) {
           );
         }
 
-        // handle PARENT CompType
+        ////////////////// handle PARENT
         const parentPath = path.findParent((path) => t.isJSXElement(path.node));
         // console.log("parentPath", parentPath);
 
@@ -503,12 +546,9 @@ function createPlugin(babel) {
         if (parentPath) {
           let parentType = parentPath.node.openingElement.name.name;
 
-          console.log(
-            "parentPath.openingElement",
-            parentPath.node.openingElement
-          );
+          // console.log("parentPath.openingElement", parentPath.node.openingElement);
 
-          let parentAttrs = handleAttributes(
+          let parentAttrs = handleprops(
             parentType,
             parentPath.node.openingElement.attributes,
             path
@@ -518,9 +558,10 @@ function createPlugin(babel) {
           // console.log("parentObj", parentObj);
         }
 
-        // handle CHILDREN:
+        ///////////////////// handle CHILDREN:
         let childrenArr = [];
-        if (path.node.children) {
+        if (path.node.children.length !== 0) {
+          // console.log("path.node.children", path.node.children);
           const childrenNodeArr = path.node.children.filter(
             (el) => el.type !== "JSXText"
           );
@@ -528,7 +569,9 @@ function createPlugin(babel) {
             childrenNodeArr.length > 0
               ? childrenNodeArr.map((child) => child.openingElement.name.name)
               : null;
-          // console.log(childrenNamesArr);
+          //console.log("childrenNodeArr", childrenNodeArr);
+          //console.log("childrenNamesArr", childrenNamesArr);
+
           // validate children:
           if (!hasValidChildren(childrenNamesArr, compType)) {
             throw path.buildCodeFrameError(
@@ -539,7 +582,7 @@ function createPlugin(babel) {
             // console.log("child", child);
 
             // console.log("opening child:", child.openingElement);
-            let childAttrs = handleAttributes(
+            let childAttrs = handleprops(
               childrenNamesArr[i],
               child.openingElement.attributes,
               path
@@ -555,9 +598,9 @@ function createPlugin(babel) {
         let compAttrs;
         let compObj;
 
-        console.log(path.node.openingElement);
+        // console.log(path.node.openingElement);
         if (path.node.openingElement.attributes) {
-          compAttrs = handleAttributes(
+          compAttrs = handleprops(
             compType,
             path.node.openingElement.attributes,
             path
@@ -574,17 +617,18 @@ function createPlugin(babel) {
         };
 
         // populate our rendering queue with the currently visited component
+
+        // get the syntax
+        const suitescriptcalls = getSSComponentCalls(compInput, path);
+        compInput.suitescript = suitescriptcalls;
+
         pageArr.push({
           [compType]: compInput,
         });
 
         console.log("pageArr:", pageArr);
-
-        // get the syntax
-        const ssComponent = getSSComponentCalls(compInput, path);
-
-        console.log("ssComponent:", ssComponent);
       },
     },
   };
+  console.log(pageArr);
 }
