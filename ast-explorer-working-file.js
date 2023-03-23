@@ -7,6 +7,10 @@ function createPlugin(babel) {
 
   //////////////////////////// SUITESCRIPT LIBRARY
   const SS = {
+    // Page tracks state
+    Page: {
+      type: null,
+    },
     Form: {
       // ui comes from outside the scope of the component function
       add: (ui, title, varName) => {
@@ -284,7 +288,7 @@ function createPlugin(babel) {
 
   // takes in attributes object for each component it is called on,
   // and returns an object of {varName and id} to add to our pageArr for further processing
-  function createCompObj(attrObj, type, path) {
+  function createCompObj(type, attrObj, path) {
     try {
       let id = null;
       let varName;
@@ -370,7 +374,6 @@ function createPlugin(babel) {
     // page components:
     if (SS[type].isPage) {
       suiteScriptSyntax = SS[type].add(ui, attrObj.title, varName);
-      SS[type].pageVar = varName; // update state with a pageVar value
     } else {
       // non-page components:
       if (type === "Sublist") {
@@ -522,15 +525,13 @@ function createPlugin(babel) {
   //////////////////////////////////////////////////////////////
 
   // this is where we track the components insertion order & their children
-  const pageArr = new Array();
+  const pageObj = {};
 
   return {
     name: "jssx",
     visitor: {
       JSXElement(path) {
         let compType = path.node.openingElement.name.name;
-        let compInput; // Used to populate and pass to getSSComponentCalls
-
         // PascalCase check:
         if (compType.charAt(0) !== compType.charAt(0).toUpperCase()) {
           throw path.buildCodeFrameError(
@@ -538,6 +539,9 @@ function createPlugin(babel) {
           );
         }
 
+        let compAttrs = path.node.openingElement.attributes;
+
+        /*
         ////////////////// handle PARENT
         const parentPath = path.findParent((path) => t.isJSXElement(path.node));
         // console.log("parentPath", parentPath);
@@ -548,27 +552,76 @@ function createPlugin(babel) {
 
           // console.log("parentPath.openingElement", parentPath.node.openingElement);
 
-          let parentAttrs = handleprops(
-            parentType,
-            parentPath.node.openingElement.attributes,
-            path
-          );
+          let parentAttrs = handleprops(parentType, parentPath.node.openingElement.attributes, path);
           // console.log("parentAttrs:", parentAttrs);
           parentObj = createCompObj(parentAttrs, parentType, path);
           // console.log("parentObj", parentObj);
         }
+        */
 
+        // HANDLE VISITED NODE:
+        if (compAttrs) {
+          let props = handleprops(compType, compAttrs, path);
+          let compObj = createCompObj(compType, compAttrs, path);
+          // plot the pageObj with current node
+          pageObj[compType] = {
+            props: props,
+            compObj: compObj,
+            siblings: [],
+            children: [],
+          };
+        }
+
+        console.log(pageObj);
+
+        // HANDLE SIBLINGS:
+        const siblingsArr = path
+          .getAllNextSiblings()
+          .filter((sib) => sib.node.type !== "JSXText")
+          .map((sib) => sib.node);
+
+        siblingsArr.forEach((s, i) => {
+          let sibType = s.openingElement.name.name;
+          let sibAttrs = s.openingElement.attributes; // get raw attributes
+          let sibProps = handleprops(sibType, sibAttrs, path); // handle them by their type
+          let compObj = createCompObj(sibType, sibAttrs, path);
+
+          // add siblings to page:
+          pageObj[compType].siblings.push(compObj);
+
+          console.log(pageObj);
+
+          if (s.children.length === 0) {
+            return; // if no children, next sibling!
+          } else {
+            let childArr = s.children
+              .filter((child) => child.type !== "JSXText")
+              .map((child) => child.openingElement);
+            console.log("childArr", childArr);
+
+            childArr.forEach((c, n) => {
+              let childType = c.openingElement.name.name;
+              let childAttrs = c.openingElement.attributes; // get raw attributes
+              let childProps = handleprops(childType, childAttrs, path); // handle them by their type
+              let compObj = createCompObj(childType, childAttrs, path);
+
+              // add child to sibling:
+              pageObj[compType].siblings[i].children.push(compObj);
+            });
+          }
+        });
+
+        console.log(pageObj);
+
+        console.log("siblingsArr", siblingsArr);
+
+        /*
         ///////////////////// handle CHILDREN:
-        let childrenArr = [];
+
         if (path.node.children.length !== 0) {
           // console.log("path.node.children", path.node.children);
-          const childrenNodeArr = path.node.children.filter(
-            (el) => el.type !== "JSXText"
-          );
-          const childrenNamesArr =
-            childrenNodeArr.length > 0
-              ? childrenNodeArr.map((child) => child.openingElement.name.name)
-              : null;
+          const childrenNodeArr = path.node.children.filter((el) => el.type !== "JSXText");
+          const childrenNamesArr = childrenNodeArr.length > 0 ? childrenNodeArr.map((child) => child.openingElement.name.name) : null;
           //console.log("childrenNodeArr", childrenNodeArr);
           //console.log("childrenNamesArr", childrenNamesArr);
 
@@ -582,11 +635,7 @@ function createPlugin(babel) {
             // console.log("child", child);
 
             // console.log("opening child:", child.openingElement);
-            let childAttrs = handleprops(
-              childrenNamesArr[i],
-              child.openingElement.attributes,
-              path
-            );
+            let childAttrs = handleprops(childrenNamesArr[i], child.openingElement.attributes, path);
             let childObj = createCompObj(childAttrs, childrenNamesArr[i], path);
             // console.log("childObj", childObj);
             return childObj;
@@ -595,25 +644,16 @@ function createPlugin(babel) {
         }
 
         // Handle component attributes:
-        let compAttrs;
         let compObj;
 
         // console.log(path.node.openingElement);
         if (path.node.openingElement.attributes) {
-          compAttrs = handleprops(
-            compType,
-            path.node.openingElement.attributes,
-            path
-          );
+          compAttrs = handleprops(compType, path.node.openingElement.attributes, path);
           compObj = createCompObj(compAttrs, compType, path);
         }
 
         compInput = {
-          component: {
-            details: compObj,
-            parent: parentObj,
-            children: childrenArr,
-          },
+          component: { details: compObj, parent: parentObj, sibling: "", children: childrenArr }
         };
 
         // populate our rendering queue with the currently visited component
@@ -622,13 +662,11 @@ function createPlugin(babel) {
         const suitescriptcalls = getSSComponentCalls(compInput, path);
         compInput.suitescript = suitescriptcalls;
 
-        pageArr.push({
-          [compType]: compInput,
-        });
+        pageObj[compType] = compInput;
 
-        console.log("pageArr:", pageArr);
+        console.log("pageObj:", pageObj);
+        */
       },
     },
   };
-  console.log(pageArr);
 }
