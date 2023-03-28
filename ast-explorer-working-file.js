@@ -393,24 +393,25 @@ function createPlugin(babel) {
     console.log("PROPS", compInput.props);
 
     // an array of the names of props that add syntax (ie. are functions/objects)
-    let propCallsArr = [];
-    let addPropsArr = [];
+    let propCallsArr = new Map();
+    let addPropsArr = new Map();
+    let suiteScriptSyntax;
 
     // if component has a varName
     if (compInput.props.varName) {
-      addPropsArr.push(compInput.props.varName);
-      propCallsArr.push(compInput.props.varName);
+      addPropsArr.set("varName", compInput.props.varName);
+      propCallsArr.set("varName", compInput.props.varName);
     }
 
     // categorize prop keys by whether they are part of the add Call or Other SS Calls:
-    Object.keys(compInput.props).forEach((prop) => {
-      console.log("prop key:", prop);
+    Object.entries(compInput.props).forEach((prop) => {
+      console.log("prop key:", prop[0], ":", prop[1]);
       // if the prop has value
       if (compInput.props[prop]) {
         if (typeof SS[compInput.type].props[prop] !== "object") {
-          propCallsArr.push(prop);
+          propCallsArr.set(prop[0], prop[1]);
         } else {
-          addPropsArr.push(prop);
+          addPropsArr.set(prop[0], prop[1]);
         }
       }
     });
@@ -419,21 +420,23 @@ function createPlugin(babel) {
     console.log("addPropsArr", addPropsArr);
 
     // ADD COMPONENT SYNTAX, arguments are spread because .add's parameters vary across components:
-    if (SS[compInput.type].isPage) {
-      console.log("compInput.props", compInput.props);
-      let suiteScriptSyntax = SS[compInput.type].add(
+    // Page component?
+    if (SS[compInput.type].attributes.isPage) {
+      console.log("IS PAGE: compInput.props", compInput.props);
+      suiteScriptSyntax = SS[compInput.type].add(
         ui,
         compInput.props[addPropsArr]
       );
+      // non-Page component:
+    } else {
+      suiteScriptSyntax = SS[compInput.type].add(...addPropsArr);
+
+      console.log("suiteScriptSyntax: \n", suiteScriptSyntax);
+      // Props API calls:
+      propCallsArr.forEach((prop) => {
+        suiteScriptSyntax += SS[compInput.type][prop];
+      });
     }
-
-    let suiteScriptSyntax = SS[compInput.type].add(...addPropsArr);
-
-    console.log("suiteScriptSyntax: \n", suiteScriptSyntax);
-
-    propCallsArr.forEach((prop) => {
-      suiteScriptSyntax += SS[compInput.type][prop];
-    });
 
     console.log("suiteScriptSyntax: \n", suiteScriptSyntax);
   }
@@ -448,26 +451,16 @@ function createPlugin(babel) {
     let properties = {}; // new props object per component visit
 
     propsArr.forEach((prop) => {
-      // console.log(comp);
-      // console.log(prop);
-      // console.log("start check:", props);
       const propName = prop.name.name;
       const propValNode = prop.value; // won't exist for some Nodes
-      //   console.log("propValNode:", propValNode);
       const propValExp = prop.value ? prop.value.expression : null; //  won't exist for some Nodes
 
-      // valid propibute of component?
+      // valid prop of component?
       console.log(SS[comp].props.hasOwnProperty(propName));
       if (!SS[comp].props.hasOwnProperty(propName)) {
         throw path.buildCodeFrameError(
           `ERR: The prop called: '${propName}' is NOT a valid prop in the component: '${comp}'`
         );
-      }
-
-      //   console.log("propName:", propName);
-      if (propValNode) {
-        //    console.log("propValNode.value:", propValNode.value);
-        //     console.log("propValExp:", propValExp);
       }
       // is duplicate?
       if (properties.hasOwnProperty(propName)) {
@@ -475,57 +468,39 @@ function createPlugin(babel) {
           `ERR: there is already an prop called: '${propName}' in the component: '${comp}. There cannot be duplicate props in a component'`
         );
       }
-      //   console.log("SS[comp]:", SS[comp]);
-      //  console.log("propName:", propName);
-      //  console.log(SS[comp][propName]);
-
       // (ie. disable/mandatory/selected/hidden)
       if (propValNode === null) {
         properties[propName] = true;
         return;
       }
-      //   console.log(t.isStringLiteral(propValNode));
-      // eg: propibute="yourpropibute"
+      // eg: prop="yourprop"
       if (t.isStringLiteral(propValNode)) {
-        // console.log("propName string literal", propName);
         properties[propName] = propValNode.value;
         return;
       }
-      // eg: propibute={123}
-      //  console.log("numeric propibute check:", props);
+      // eg: prop={123}
       if (
         t.isJSXExpressionContainer(propValNode) &&
         t.isNumericLiteral(propValExp)
       ) {
-        //   console.log("propName numeric:", propName);
-        //   console.log("propValExp.value:", propValExp.value);
-        //   console.log(props);
         properties[propName] = propValExp.value;
-        //    console.log(props);
         return;
       }
-      //  console.log(props);
-      // handle props that have a binding that is IN the PAGE's FUNCTION SCOPE
+      // Props w. Bindings (IN FUNCTION SCOPE)
       if (
         t.isJSXExpressionContainer(propValNode) &&
         t.isIdentifier(propValExp)
       ) {
         const identifiersObj = path.scope.bindings;
-        //   console.log("binding block:", props);
-        //   console.log("identifiersObj", identifiersObj);
-
         // if the identifier object has props:
         if (Object.keys(identifiersObj).length !== 0) {
           let bindingIdNode = identifiersObj[propValExp.name].path.node;
-          //    console.log("bindingIdNode:", bindingIdNode);
           properties[propName] = bindingIdNode.init.value;
-          //  console.log("post binding check:", props);
           return;
         }
-        // outside scope! HOW DO WE GET THIS FROM WITHIN THE JSXELEMENT VISITOR?
+        // Props w. Bindings (OUTSIDE FUNCTION SCOPE) how do????????
       }
     });
-    //  console.log("comp props return check:", props);
     return properties;
   }
   //////////////////////////////////////////////////////////////
@@ -535,41 +510,7 @@ function createPlugin(babel) {
   // Global Object: this is where we track the components insertion order
   const pageArr = []; // structure that indicated relationships
   const syntaxArr = []; // the queue of SS strings for replacing JSX
-  let pageVar = "";
-
-  /*
-  
-  
-syntaxArr: [
-  Page: {
-    	varName: '',
-        syntax: ''
-     }
-  ]
-  
-//////////////////
-  {
-    Page: {
-    	varName: '',
-        id: '',
-        props: '', // props as object = functions to be called
-    	siblings: [...components]
-    	children: [...components]
-    },
-  }
-  
-//////////////////
- component: {
-  	varName: '',
-    id: '',
-    props: '', // props as object = functions to be called
-    siblings: [],
-    children: [],
- }
-
-    
-    
-  */
+  let pageVar;
 
   return {
     name: "jssx",
@@ -604,97 +545,6 @@ syntaxArr: [
         console.log("pageArr", pageArr);
 
         getSSComponentCalls(currComp, path);
-
-        /*
-        // Traverse siblings
-        pageObj[compType].siblings.forEach((s, i) => {
-          let sibType = s.openingElement.name.name;
-          let sibAttrs = s.openingElement.attributes; // get raw attributes
-          let sibProps = handleprops(sibType, sibAttrs, path); // handle them by their type
-
-          // add sibling and their details to pageObj:
-          pageObj[compType].siblings[i] = {
-            ...createCompObj(compType, sibAttrs, path)
-          };
-
-          console.log("pageObj siblings:", pageObj);
-
-          if (!s.children.length) {
-            return; // if no children, move to next sibling!
-          } else {
-            console.log(" s.children", s.children);
-
-            // Traverse childArr from each element in siblingArr
-            s.children
-              .filter((sib) => sib.node.type !== "JSXText")
-              .forEach((c) => {
-                console.log("c", c);
-                let childType = c.name.name;
-                console.log("childType", childType);
-                let childAttrs = c.attributes; // get raw attributes
-                console.log("childAttrs", childAttrs);
-                let childProps = handleprops(childType, childAttrs, path); // handle them by their type
-                console.log("childProps", childProps);
-                // add child to sibling:
-                pageObj[compType].siblings[i].children.push(...createCompObj(childType, childAttrs, path));
-              });
-          }
-        });
-        */
-
-        //console.log("siblingsArr", siblingsArr);
-
-        /*
-        ///////////////////// handle CHILDREN:
-
-        if (path.node.children.length !== 0) {
-          // console.log("path.node.children", path.node.children);
-          const childrenNodeArr = path.node.children.filter((el) => el.type !== "JSXText");
-          const childrenNamesArr = childrenNodeArr.length > 0 ? childrenNodeArr.map((child) => child.openingElement.name.name) : null;
-          //console.log("childrenNodeArr", childrenNodeArr);
-          //console.log("childrenNamesArr", childrenNamesArr);
-
-          // validate children:
-          if (!hasValidChildren(childrenNamesArr, compType)) {
-            throw path.buildCodeFrameError(
-              `ERROR: jsx compType: ${compType} has an invalid child that is not compatible to be nested within this component!`
-            );
-          }
-          childrenArr = childrenNodeArr.map((child, i) => {
-            // console.log("child", child);
-
-            // console.log("opening child:", child.openingElement);
-            let childAttrs = handleprops(childrenNamesArr[i], child.openingElement.attributes, path);
-            let childObj = createCompObj(childAttrs, childrenNamesArr[i], path);
-            // console.log("childObj", childObj);
-            return childObj;
-          });
-          // console.log("childrenArr", childrenArr);
-        }
-
-        // Handle component attributes:
-        let compObj;
-
-        // console.log(path.node.openingElement);
-        if (path.node.openingElement.attributes) {
-          compAttrs = handleprops(compType, path.node.openingElement.attributes, path);
-          compObj = createCompObj(compAttrs, compType, path);
-        }
-
-        compInput = {
-          component: { details: compObj, parent: parentObj, sibling: "", children: childrenArr }
-        };
-
-        // populate our rendering queue with the currently visited component
-
-        // get the syntax
-        const suitescriptcalls = getSSComponentCalls(compInput, path);
-        compInput.suitescript = suitescriptcalls;
-
-        pageObj[compType] = compInput;
-
-        console.log("pageObj:", pageObj);
-        */
       },
     },
   };
