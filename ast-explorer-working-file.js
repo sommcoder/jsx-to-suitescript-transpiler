@@ -13,9 +13,9 @@ function createPlugin(babel) {
     },
     Form: {
       // ui comes from outside the scope of the component function
-      add: (ui, varName, title) => {
-        return `const ${varName} = ${ui}.createForm({
-        title: '${title}',
+      add: (ui, props) => {
+        return `const ${props.varName} = ${ui}.createForm({
+        title: '${props.title}',
       });`;
       },
       attributes: {
@@ -26,28 +26,29 @@ function createPlugin(babel) {
         possibleParents: null,
       },
       props: {
+        varName: null,
         title: null,
-        module: (pageVar, path) => {
-          return `${pageVar}.clientScriptModulePath = '${path}';
+        module: (props) => {
+          return `${props.pageVar}.clientScriptModulePath = '${props.path}';
         `;
         },
-        fileId: (pageVar, id) => {
-          return `${pageVar}.clientScriptFileId = '${id}';
+        fileId: (props) => {
+          return `${props.pageVar}.clientScriptFileId = '${props.id}';
         `;
         },
-        navBar: (pageVar, id) => {
-          return `${pageVar}.clientScriptFileId = '${id}';
+        navBar: (props) => {
+          return `${props.pageVar}.clientScriptFileId = '${props.id}';
         `;
         },
       },
     },
     // PascalCase
     FieldGroup: {
-      add: (pageVar, id, varName, label, tab) => {
-        return `const ${varName} = ${pageVar}.addFieldGroup({
-        id: '${id}',
-        label: '${label}',
-        ${tab ? `tab: ${tab}` : ""}
+      add: (props) => {
+        return `const ${props.varName} = ${props.pageVar}.addFieldGroup({
+        id: '${props.id}',
+        label: '${props.label}',
+        ${props.tab ? `tab: ${props.tab}` : ""}
      })
     `;
       },
@@ -63,27 +64,27 @@ function createPlugin(babel) {
         id: null,
         label: null,
         tab: null,
-        single: (name) => {
-          return `${name}.isSingleColumn;`;
+        single: (props) => {
+          return `${props.name}.isSingleColumn;`;
         },
-        collapsible: (name) => {
-          return `${name}.isCollapsible = true;`;
+        collapsible: (props) => {
+          return `${props.name}.isCollapsible = true;`;
         },
-        collapsed: (name) => {
-          return `${name}.isCollapsed;`;
+        collapsed: (props) => {
+          return `${props.name}.isCollapsed;`;
         },
-        borderHidden: (name) => {
-          return `${name}.isBorderHidden = true;`;
+        borderHidden: (props) => {
+          return `${props.name}.isBorderHidden = true;`;
         },
       },
     },
     Sublist: {
-      add: (pageVar, id, varName, label, type, tab) => {
-        return `const ${varName} = ${pageVar}.addSublist({
-      id: '${id}',
-      ${label ? `label: '${label}'` : `label: '${id}'`},
-      tab: '${tab}'
-      type: '${type}',
+      add: (props) => {
+        return `const ${props.varName} = ${props.pageVar}.addSublist({
+      id: '${props.id}',
+      ${props.label ? `label: '${props.label}'` : `label: '${props.id}'`},
+ 	  ${props.type ? `type: ${props.type},` : ""}
+      ${props.tab ? `tab: ${props.tab}` : ""}
     })`;
       },
       attributes: {
@@ -100,20 +101,20 @@ function createPlugin(babel) {
         tab: null,
         varName: null,
         pageVar: null,
-        markAll: (sublist) => {
-          return `${sublist}.addMarkAllButtons();
+        markAll: (props) => {
+          return `${props.varName}.addMarkAllButtons();
         `;
         },
       },
     },
     Field: {
-      add: (pageVar, id, varName, label, type, source, container) => {
-        return `const ${varName} = ${pageVar}.addField({
-      id: '${id}',
-      ${label ? `label: '${label}'` : `label: '${id}'`},
-      type: '${type}',
-      source: '${source}',
-      container: '${container}'
+      add: (props) => {
+        return `const ${props.varName} = ${props.pageVar}.addField({
+      id: '${props.id}',
+      ${props.label ? `label: '${props.label}'` : `label: '${props.id}'`},
+      type: '${props.type}',
+      source: '${props.source}',
+      container: '${props.container}'
     })`;
       },
       attributes: {
@@ -131,41 +132,34 @@ function createPlugin(babel) {
         varName: null,
         source: null,
         container: null,
-        mandatory: (field, mandatory) => {
+        mandatory: (props) => {
           if (mandatory)
-            return `${field}.isMandatory = ${mandatory};
+            return `${props.field}.isMandatory = ${props.mandatory};
     `;
           else return "";
         },
-        credential: (
-          id,
-          pageVar,
-          domain,
-          varName,
-          scriptIds,
-          restUser,
-          container
-        ) => {
-          return `const ${varName} = ${pageVar}.addCredentialField({
-        id: '${id}',
-        restrictToDomains: '${domain}',
-        ${scriptIds ? `restrictToScriptIds : '${scriptIds}'` : ""},
-        ${restUser ? `restrictToCurrentUser : '${restUser}'` : ""},
-        ${container ? `container: '${container}'` : ""}
+        credential: (props) => {
+          return `const ${props.varName} = ${props.pageVar}.addCredentialField({
+        id: '${props.id}',
+        restrictToDomains: '${props.domain}',
+        ${props.scriptIds ? `restrictToScriptIds : '${props.scriptIds}'` : ""},
+        ${props.restUser ? `restrictToCurrentUser : '${props.restUser}'` : ""},
+        ${props.container ? `container: '${props.container}'` : ""}
  })`;
         },
-        def: (field, def) => {
-          if (def) return `${field}.defaultValue = '${def}';        `;
+        def: (props) => {
+          if (def)
+            return `${props.field}.defaultValue = '${props.def}';        `;
           else "";
         },
-        help: (field, help) => {
-          return `${field}.setHelpText({
-    help: '${help}'
+        help: (props) => {
+          return `${props.field}.setHelpText({
+    help: '${props.help}'
   });
   `;
         },
-        max: (field, max) => {
-          return `${field}.maxLength = ${max};
+        max: (props) => {
+          return `${props.field}.maxLength = ${props.max};
   `;
         },
         source: () => {},
@@ -173,35 +167,35 @@ function createPlugin(babel) {
         layout: () => {},
         display: () => {},
         select: () => {},
-        secret: (pageVar, id, varName, scriptIds, restUser, label) => {
-          return `const ${varName} = ${pageVar}.addSecretKeyField({
-              id: '${id}',
-              ${label ? `label: '${label}'` : `label: ${id}`},
-              restrictToScriptIds: '${scriptIds}',
-              restrictToCurrentUser: ${restUser || false},
+        secret: (props) => {
+          return `const ${props.varName} = ${props.pageVar}.addSecretKeyField({
+              id: '${props.id}',
+              ${props.label ? `label: '${props.label}'` : `label: ${props.id}`},
+              restrictToScriptIds: '${props.scriptIds}',
+              restrictToCurrentUser: ${props.restUser || false},
             })
   `;
         },
         // the id of the field:
-        totalling: (sublistVar, id) => {
-          return `${sublistVar}.updateTotallingField({
-      id: '${id}',
+        totalling: (props) => {
+          return `${props.sublistVar}.updateTotallingField({
+      id: '${props.id}',
 })`;
         },
-        unique: (sublistVar, id) => {
-          return `${sublistVar}.updateUniqueFieldId({
-  id: '${id}',
+        unique: (props) => {
+          return `${props.sublistVar}.updateUniqueFieldId({
+  id: '${props.id}',
 })`;
         },
       },
     },
 
     Select: {
-      add: (value, text, fieldVar, isSelected = false) => {
-        return `${fieldVar}.addSelectOption({
-                  value : '${value}',
-                  text : '${text}',
-                  ${isSelected ? `isSelected: true` : ""}
+      add: (props) => {
+        return `${props.fieldVar}.addSelectOption({
+                  value : '${props.value}',
+                  text : '${props.text}',
+                  ${props.isSelected ? `isSelected: true` : ""}
             });
 `;
       },
@@ -220,11 +214,15 @@ function createPlugin(babel) {
       },
     },
     Button: {
-      add: (pageVar, id, label, varName, func) => {
-        return `const ${varName} = ${pageVar}.addButton({
-                id: '${id}',
-                ${label ? `label: '${label}'` : `label: '${id}'`},
-                ${func ? `func: ${func}` : ""}
+      add: (props) => {
+        return `const ${props.varName} = ${props.pageVar}.addButton({
+                id: '${props.id}',
+                ${
+                  props.label
+                    ? `label: '${props.label}'`
+                    : `label: '${props.id}'`
+                },
+                ${props.func ? `func: ${props.func}` : ""}
             });`;
       },
       attributes: {
@@ -240,38 +238,40 @@ function createPlugin(babel) {
         varName: null, // the variable name of this button component
         pageVar: null, // the variable name of the page the button belongs to
         func: null,
-        disabled: (buttonVar, path) => {
-          return `${buttonVar}.clientScriptModulePath = '${path}';
+        disabled: (props) => {
+          return `${props.buttonVar}.clientScriptModulePath = '${props.path}';
         `;
         },
-        hidden: (buttonVar, id) => {
-          return `${buttonVar}.clientScriptFileId = '${id}';
+        hidden: (props) => {
+          return `${props.buttonVar}.clientScriptFileId = '${props.id}';
         `;
         },
-        submit: (pageVar, label) => {
-          return `const submitBtn = ${pageVar}.addSubmitButton({
-          ${label ? `label: '${label}'` : ""},
+        submit: (props) => {
+          return `const submitBtn = ${props.pageVar}.addSubmitButton({
+          ${props.label ? `label: '${props.label}'` : ""},
         })
         `;
         },
-        reset: (pageVar, label) => {
-          return `const ${label || "resetBtn"} = ${pageVar}.addResetButton({
-          label: '${label || "Reset Button"}'
+        reset: (props) => {
+          return `const ${props.label || "resetBtn"} = ${
+            props.pageVar
+          }.addResetButton({
+          label: '${props.label || "Reset Button"}'
         })
         `;
         },
-        refresh: (sublistVar) => {
-          return `const refreshBtn = ${sublistVar}.addRefreshButton();
+        refresh: (props) => {
+          return `const refreshBtn = ${props.sublistVar}.addRefreshButton();
         `;
         },
       },
     },
     // creates the Page, whether thats a Form, List or Assistant
     // always gets called in the plugin
-    Write: (res, pageVar) => {
+    Write: (res, props) => {
       return `
     ${res}.writePage({
-        pageObject: ${pageVar}
+        pageObject: ${props.pageVar}
     })  
 `;
     },
@@ -286,42 +286,28 @@ function createPlugin(babel) {
       `ERR: the jsx component: ${comp}, is NOT included in the ss library. Refer to docs to see included components`,
   };
 
-  // takes in attributes object for each component it is called on,
-  // and returns an object of {varName and id} to add to our pageArr for further processing
   function createCompObj(type, attrObj, path) {
     try {
       let id = null;
       let varName;
-      let props = handleprops(type, attrObj, path);
+      let props = handleProps(type, attrObj, path);
       console.log("props:", props);
       // if none of the below, must be SELECT component, which doesn't need a label/id/title/varName
-      if (props.label || props.id || props.title) {
-        // id NOT provided, create id from label or title
-        if (!props.id) {
-          id = createCompId(props.label || props.title, path);
-          console.log("id:", id);
-        } else {
-          id = props.id;
-        }
-        varName = createVarName(
-          props.label || props.id || props.title,
-          type,
+      console.log("varName:", props.varName);
+      let parentPath = path.findParent((path) => path.isJSXElement()) || null;
+      let parentVar;
+      // if parent exists:
+      if (parentPath) {
+        console.log("parent.node:", parentPath.node.openingElement);
+        let parentAttrsArr = parentPath.node.openingElement.attributes;
+        console.log(parentAttrsArr);
+        parentVar = handleProps(
+          parentPath.node.openingElement.name.name,
+          parentAttrsArr,
           path
         );
-      } else varName = null; // component is a SELECT component
-
-      props.varName = varName;
-      props.id = id;
-      console.log("varName:", varName);
-      let parent = path.findParent((path) => path.isJSXElement()) || null;
-
-      // if parent exists:
-      if (parent) {
-        console.log("parent.node:", parent.node.openingElement);
-        parent = parent.node.openingElement;
       }
-      console.log("parent:", parent);
-      // console.log(parent.node.openingElement || '');
+      console.log("parent:", parentVar);
 
       let siblingsArr = [
         ...path
@@ -337,7 +323,7 @@ function createPlugin(babel) {
       console.log("childArr", childArr);
 
       return {
-        parent: parent,
+        parent: parentVar,
         props: props,
         type: type,
         siblings: siblingsArr,
@@ -348,7 +334,24 @@ function createPlugin(babel) {
     }
   }
 
-  // titles are autogenerated from label attribute
+  // controls how props are converted into variables/id's
+  function handleVars(type, props, path) {
+    console.log("handleVars props:", props);
+    if (props.label || props.id || props.title) {
+      // id NOT provided, create id from label or title
+      if (!props.id && !SS[type].attributes.isPage) {
+        props.id = createCompId(props.label || props.title, path);
+      }
+      props.varName = createVarName(
+        props.label || props.id || props.title,
+        type,
+        path
+      );
+    } else props.varName = null; // component is a SELECT component
+    return props;
+  }
+
+  // titles are autogenerated from label attribute, label is REQUIRED in JSSX
   function createCompId(label, path) {
     //  console.log("id: label:", label);
     const regex = /^[a-zA-Z_\s]+$/;
@@ -359,7 +362,7 @@ function createPlugin(babel) {
     }
   }
 
-  // creates the variable string
+  // creates a constant variable name of each component
   function createVarName(string, type, path) {
     //console.log("camel: string:", string);
     const regex = /^[a-zA-Z_\s]+$/;
@@ -393,49 +396,52 @@ function createPlugin(babel) {
     console.log("PROPS", compInput.props);
 
     // an array of the names of props that add syntax (ie. are functions/objects)
-    let propCallsArr = new Map();
-    let addPropsArr = new Map();
+    let propCallsObj = {
+      varName: compInput.props.varName,
+      pageVar: pageVar,
+    }; // gets varName by default
+    let addPropsObj = {};
     let suiteScriptSyntax;
 
     // if component has a varName
+    /*
     if (compInput.props.varName) {
       addPropsArr.set("varName", compInput.props.varName);
       propCallsArr.set("varName", compInput.props.varName);
     }
+    */
 
     // categorize prop keys by whether they are part of the add Call or Other SS Calls:
-    Object.entries(compInput.props).forEach((prop) => {
-      console.log("prop key:", prop[0], ":", prop[1]);
-      // if the prop has value
-      if (compInput.props[prop]) {
-        if (typeof SS[compInput.type].props[prop] !== "object") {
-          propCallsArr.set(prop[0], prop[1]);
-        } else {
-          addPropsArr.set(prop[0], prop[1]);
-        }
+    for (let [key, value] of Object.entries(compInput.props)) {
+      // console.log("key:", key, "value:", value);
+      if (typeof SS[compInput.type].props[key] !== "object") {
+        propCallsObj[key] = value;
+      } else {
+        addPropsObj[key] = value;
       }
-    });
+    }
 
-    console.log("propCallsArr", propCallsArr);
-    console.log("addPropsArr", addPropsArr);
+    console.log("propCallsObj", propCallsObj);
+    console.log("addPropsObj", addPropsObj);
 
     // ADD COMPONENT SYNTAX, arguments are spread because .add's parameters vary across components:
-    // Page component?
+    // ADD Page component:
     if (SS[compInput.type].attributes.isPage) {
-      console.log("IS PAGE: compInput.props", compInput.props);
-      suiteScriptSyntax = SS[compInput.type].add(
-        ui,
-        compInput.props[addPropsArr]
-      );
-      // non-Page component:
+      console.log("PAGE!");
+      suiteScriptSyntax = SS[compInput.type].add(ui, addPropsObj);
     } else {
-      suiteScriptSyntax = SS[compInput.type].add(...addPropsArr);
+      // ADD non-Page component:
+      console.log("NOT PAGE!");
+      suiteScriptSyntax = SS[compInput.type].add(addPropsObj);
 
-      console.log("suiteScriptSyntax: \n", suiteScriptSyntax);
-      // Props API calls:
-      propCallsArr.forEach((prop) => {
-        suiteScriptSyntax += SS[compInput.type][prop];
-      });
+      for (let [key, value] of Object.entries(propCallsObj)) {
+        console.log("key:", key, "value:", value);
+
+        if (typeof key === "object") {
+          console.log(SS[compInput.type].props[key]);
+          suiteScriptSyntax += SS[compInput.type].props[key](value);
+        }
+      }
     }
 
     console.log("suiteScriptSyntax: \n", suiteScriptSyntax);
@@ -447,7 +453,7 @@ function createPlugin(babel) {
     );
   }
 
-  function handleprops(comp, propsArr, path) {
+  function handleProps(comp, propsArr, path) {
     let properties = {}; // new props object per component visit
 
     propsArr.forEach((prop) => {
@@ -501,7 +507,8 @@ function createPlugin(babel) {
         // Props w. Bindings (OUTSIDE FUNCTION SCOPE) how do????????
       }
     });
-    return properties;
+    console.log("createVars", handleVars(comp, properties, path));
+    return handleVars(comp, properties, path);
   }
   //////////////////////////////////////////////////////////////
   /////////////////// PLUGIN ///////////////////////////////////
@@ -510,7 +517,7 @@ function createPlugin(babel) {
   // Global Object: this is where we track the components insertion order
   const pageArr = []; // structure that indicated relationships
   const syntaxArr = []; // the queue of SS strings for replacing JSX
-  let pageVar;
+  let pageVar = "";
 
   return {
     name: "jssx",
@@ -530,10 +537,11 @@ function createPlugin(babel) {
         let compAttrs = path.node.openingElement.attributes;
         if (compAttrs) {
           // assign pageObj its initial key/values
-          currComp = { ...createCompObj(compType, compAttrs, path) };
+          currComp = createCompObj(compType, compAttrs, path);
 
           // first component is Page:
-          if (pageArr.length === 0) pageVar = currComp.varName;
+          console.log(pageArr.length);
+          if (pageArr.length === 0) pageVar = currComp.props.varName;
 
           pageArr.push({ [compType]: currComp });
         } else {
