@@ -244,6 +244,7 @@ function createPlugin(babel) {
         varName: null, // the variable name of this button component
         pageVar: null, // the variable name of the page the button belongs to
         func: null,
+        options: ["hidden", "submit", "reset"],
         disabled: (props) => {
           return `${props.buttonVar}.clientScriptModulePath = '${props.path}';
         `;
@@ -449,16 +450,12 @@ function createPlugin(babel) {
     for (let [key, value] of Object.entries(compInput.props)) {
       // console.log("key:", key, "value:", value);
       if (typeof SS[compInput.type].props[key] !== "object") {
-        compInput.props.hasOwnProperty("reset")
-          ? (propCallsObj.special = "reset")
-          : "";
-        compInput.props.hasOwnProperty("submit")
-          ? (propCallsObj.special = "submit")
-          : "";
-        compInput.props.hasOwnProperty("refresh")
-          ? (propCallsObj.special = "refresh")
-          : "";
-        propCallsObj[key] = value;
+        console.log("SS[compInput].props.options", SS[compInput.type].props);
+        if (SS[compInput.type].props.options.includes(key)) {
+          propCallsObj.special = value;
+        } else {
+          propCallsObj[key] = value;
+        }
       } else {
         addPropsObj[key] = value;
       }
@@ -618,3 +615,11 @@ function createPlugin(babel) {
     },
   };
 }
+
+/*
+ 
+1) need to establish how we're going to handle special versions of components
+2) if component has OPTIONS, and the compInputObj has a key that is included in the 
+component's options array, then give the propCompObj an option prop with corresponding value
+ 
+*/
