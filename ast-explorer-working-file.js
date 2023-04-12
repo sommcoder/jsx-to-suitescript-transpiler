@@ -84,17 +84,17 @@ function createPlugin(babel) {
       add: (props) => {
         return `const ${props.varName} = ${props.pageVar}.addSublist({
       id: '${props.id}',
-      ${props.label ? `label: '${props.label}'` : `label: '${props.id}'`},
+      label: '${props.label}',
  	  ${props.type ? `type: ${props.type},` : ""}
       ${props.tab ? `tab: ${props.tab}` : ""}
-    })`;
+    });`;
       },
       attributes: {
         isPage: false,
         canSelfClose: false,
         canHaveChildren: true,
         possibleChildren: ["Field", "Button"],
-        possibleParents: ["Form", "Assistant", "Tab"],
+        possibleParents: ["Form", "Assistant", "List", "Tab"],
       },
       props: {
         label: null,
@@ -115,9 +115,9 @@ function createPlugin(babel) {
         return `const ${props.varName} = ${props.pageVar}.addField({
       id: '${props.id}',
       ${props.label ? `label: '${props.label}'` : `label: '${props.id}'`},
-      type: '${props.type}',
-      source: '${props.source}',
-      container: '${props.container}'
+      ${props.type ? `type: '${props.type}',` : ""}
+      ${props.source ? `source: '${props.source}',` : ""}
+      ${props.container ? `container: '${props.container}',` : ""}
     })`;
       },
       attributes: {
@@ -214,8 +214,7 @@ function createPlugin(babel) {
         isSelected: false,
         value: null,
         text: null,
-        parentVar: null,
-        fieldVar: null,
+        parentVar: null, // can only be Field anyways
       },
     },
     Button: {
@@ -235,7 +234,8 @@ function createPlugin(babel) {
         canSelfClose: true,
         canHaveChildren: false,
         possibleChildren: null,
-        possibleParents: ["Field", "Form", "Assistant"],
+        possibleParents: ["Field", "Form", "Assistant", "Sublist"],
+        options: ["hidden", "submit", "reset"],
       },
       props: {
         label: null,
@@ -244,7 +244,6 @@ function createPlugin(babel) {
         varName: null, // the variable name of this button component
         pageVar: null, // the variable name of the page the button belongs to
         func: null,
-        options: ["hidden", "submit", "reset"],
         disabled: (props) => {
           return `${props.buttonVar}.clientScriptModulePath = '${props.path}';
         `;
@@ -303,13 +302,12 @@ function createPlugin(babel) {
       let id = null;
       let varName;
       let props = handleProps(type, attrObj, path);
-      console.log("props:", props);
+      //console.log("props:", props);
       // if none of the below, must be SELECT component, which doesn't need a label/id/title/varName
-      console.log("varName:", props.varName);
+      //console.log("varName:", props.varName);
       let parentPath = path.findParent((path) => path.isJSXElement()) || null;
       console.log("parentPath:", parentPath);
-      let parentVar;
-      let parentType;
+
       // if parent exists:
       if (parentPath) {
         console.log(
@@ -320,14 +318,13 @@ function createPlugin(babel) {
         );
         let parentAttrsArr = parentPath.node.openingElement.attributes;
         console.log(parentAttrsArr);
-        parentType = parentPath.node.openingElement.name.name;
-        parentVar = handleProps(
+        props.parentType = parentPath.node.openingElement.name.name;
+        props.parentVar = handleProps(
           parentPath.node.openingElement.name.name,
           parentAttrsArr,
           path
         ).varName;
       }
-      console.log("parent:", parentVar);
 
       let siblingsArr = [
         ...path
@@ -340,10 +337,9 @@ function createPlugin(babel) {
           .filter((child) => child.type !== "JSXText")
           .map((child) => child.openingElement),
       ];
-      console.log("childArr", childArr);
+      //console.log("childArr", childArr);
 
       return {
-        parent: { parentVar: parentVar, type: parentType },
         props: props,
         type: type,
         siblings: siblingsArr,
@@ -438,21 +434,20 @@ function createPlugin(babel) {
     let addPropsObj = {};
     let suiteScriptSyntax;
 
-    // if component has a varName
-    /*
-    if (compInput.props.varName) {
-      addPropsArr.set("varName", compInput.props.varName);
-      propCallsArr.set("varName", compInput.props.varName);
-    }
-    */
-
     // categorize prop keys by whether they are part of the add Call or Other SS Calls:
     for (let [key, value] of Object.entries(compInput.props)) {
-      // console.log("key:", key, "value:", value);
+      console.log("CompInput Prop Loop", "key:", key, "value:", value);
       if (typeof SS[compInput.type].props[key] !== "object") {
-        console.log("SS[compInput].props.options", SS[compInput.type].props);
-        if (SS[compInput.type].props.options.includes(key)) {
-          propCallsObj.special = value;
+        console.log(
+          "SS[compInput].props.attributes",
+          SS[compInput.type].attributes
+        );
+
+        if (
+          SS[compInput.type].attributes.hasOwnProperty("options") &&
+          SS[compInput.type].attributes.options.includes(key)
+        ) {
+          propCallsObj.special = key;
         } else {
           propCallsObj[key] = value;
         }
@@ -467,16 +462,16 @@ function createPlugin(babel) {
     // ADD COMPONENT SYNTAX, arguments are spread because .add's parameters vary across components:
     // ADD Page component:
     if (SS[compInput.type].attributes.isPage) {
-      console.log("PAGE!");
-      suiteScriptSyntax += SS[compInput.type].add(ui, addPropsObj);
+      console.log("PAGE COMPONENT!");
+      suiteScriptSyntax = SS[compInput.type].add(ui, addPropsObj); // initial syntax assignment
     } else {
       // whether the call is reset/submit/refresh they all accept the prop object and return string
       if (compInput.type === "Button") {
         console.log("comp is button");
         if (propCallsObj.special) {
-          console.log("button is special");
-          console.log("compInput.type:", compInput.type);
-          console.log("propCallsObj:", propCallsObj);
+          // console.log("button is special");
+          // console.log("compInput.type:", compInput.type);
+          // console.log("propCallsObj:", propCallsObj);
           suiteScriptSyntax += `\n ${SS[compInput.type].props[
             propCallsObj.special
           ](addPropsObj)}`;
@@ -487,7 +482,7 @@ function createPlugin(babel) {
       } else {
         // ADD non-Page component:
         console.log("NOT PAGE!");
-        //
+        console.log("addPropsObj", addPropsObj);
         suiteScriptSyntax = SS[compInput.type].add(addPropsObj);
 
         for (let [key, value] of Object.entries(propCallsObj)) {
@@ -565,7 +560,7 @@ function createPlugin(babel) {
         // Could we use t.isBinding() for this?
       }
     });
-    console.log("createVars", handleVars(comp, properties, path));
+    //console.log("createVars", handleVars(comp, properties, path));
     return handleVars(comp, properties, path);
   }
   //////////////////////////////////////////////////////////////
@@ -582,7 +577,7 @@ function createPlugin(babel) {
     visitor: {
       JSXElement(path) {
         let compType = path.node.openingElement.name.name;
-        console.log("compType:", compType);
+        // console.log("compType:", compType);
         let currComp = {};
         // PascalCase check:
         if (compType.charAt(0) !== compType.charAt(0).toUpperCase()) {
@@ -598,7 +593,7 @@ function createPlugin(babel) {
           currComp = createCompObj(compType, compAttrs, path);
 
           // first component is Page:
-          console.log(pageArr.length);
+          // console.log(pageArr.length);
           if (pageArr.length === 0) pageVar = currComp.props.varName;
 
           pageArr.push({ [compType]: currComp });
@@ -621,5 +616,12 @@ function createPlugin(babel) {
 1) need to establish how we're going to handle special versions of components
 2) if component has OPTIONS, and the compInputObj has a key that is included in the 
 component's options array, then give the propCompObj an option prop with corresponding value
+3) WHY is parent of Sublist and submitBtn Window? It should be Form
+
+** user provided props = values you can put inside of a JSSX component
+** source code props = any value that may be used inside syntax calls
+
+Field: 
+Button: Reset, Refresh, Submit
  
 */
