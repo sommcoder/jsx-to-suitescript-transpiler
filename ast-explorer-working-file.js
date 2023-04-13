@@ -26,265 +26,342 @@ function createPlugin(babel) {
         possibleParents: null,
       },
       props: {
-        parentVar: null,
-        varName: null,
-        title: null,
-        module: (props) => {
-          return `${props.pageVar}.clientScriptModulePath = '${props.path}';
-        `;
+        variables: {
+          parentVar: null,
+          varName: null,
+          title: null,
+          module: null,
+          fileId: null,
+          navBar: null,
         },
-        fileId: (props) => {
-          return `${props.pageVar}.clientScriptFileId = '${props.id}';
-        `;
-        },
-        navBar: (props) => {
-          return `${props.pageVar}.clientScriptFileId = '${props.id}';
-        `;
-        },
-      },
-    },
-    // PascalCase
-    FieldGroup: {
-      add: (props) => {
-        return `const ${props.varName} = ${props.pageVar}.addFieldGroup({
-        id: '${props.id}',
-        label: '${props.label}',
-        ${props.tab ? `tab: ${props.tab}` : ""}
-     })
-    `;
-      },
-      attributes: {
-        isPage: false,
-        canSelfClose: false,
-        canHaveChildren: true,
-        possibleChildren: ["Field", "Button"],
-        possibleParents: ["Form", "Assistant"],
-      },
-      props: {
-        parentVar: null,
-        varName: null,
-        id: null,
-        label: null,
-        tab: null,
-        single: (props) => {
-          return `${props.name}.isSingleColumn;`;
-        },
-        collapsible: (props) => {
-          return `${props.name}.isCollapsible = true;`;
-        },
-        collapsed: (props) => {
-          return `${props.name}.isCollapsed;`;
-        },
-        borderHidden: (props) => {
-          return `${props.name}.isBorderHidden = true;`;
+        methods: {
+          module: (props) =>
+            `${props.pageVar}.clientScriptModulePath = '${props.path}';`,
+          fileId: (props) =>
+            `${props.pageVar}.clientScriptFileId = '${props.id}';`,
+          navBar: (props) =>
+            `${props.pageVar}.clientScriptFileId = '${props.id}';`,
         },
       },
     },
-    Sublist: {
+    List: {},
+    Assistant: {},
+    Tab: {
+      /*
+      Tabs are special!
+      
+      -to enable tab to appear on your form, there must be at LEAST one component assigned to the tab
+      -if < 2 tabs on form, the tab will not appear. this is SS logic, transpile normally!
+      -Should throw WARNING for developer, but still transpile to SuiteScript^^^
+
+      */
       add: (props) => {
-        return `const ${props.varName} = ${props.pageVar}.addSublist({
+        return `const ${props.varName} = ${props.pageVar}.addTab({
       id: '${props.id}',
       label: '${props.label}',
- 	  ${props.type ? `type: ${props.type},` : ""}
-      ${props.tab ? `tab: ${props.tab}` : ""}
     });`;
       },
       attributes: {
         isPage: false,
         canSelfClose: false,
         canHaveChildren: true,
-        possibleChildren: ["Field", "Button"],
-        possibleParents: ["Form", "Assistant", "List", "Tab"],
+        possibleChildren: ["Field", "Button", "Sublist"],
+        possibleParents: ["Form"],
       },
       props: {
-        label: null,
-        type: null,
-        id: null,
-        tab: null,
-        parentVar: null,
-        varName: null,
-        pageVar: null,
-        markAll: (props) => {
-          return `${props.varName}.addMarkAllButtons();
-        `;
+        variables: {
+          varName: null,
+          parentVar: null,
+          id: null,
+          label: null,
+          tab: null,
+        },
+        methods: {
+          help: (props) => `${props.varName}.helpText = '${props.help}'`,
         },
       },
-    },
-    Field: {
-      add: (props) => {
-        return `const ${props.varName} = ${props.pageVar}.addField({
-      id: '${props.id}',
-      ${props.label ? `label: '${props.label}'` : `label: '${props.id}'`},
-      ${props.type ? `type: '${props.type}',` : ""}
-      ${props.source ? `source: '${props.source}',` : ""}
-      ${props.container ? `container: '${props.container}',` : ""}
-    })`;
-      },
-      attributes: {
-        isPage: false,
-        canSelfClose: true,
-        canHaveChildren: true,
-        possibleChildren: ["Select"],
-        possibleParents: ["Form", "Assistant", "Tab", "Sublist", "List"],
-      },
-      props: {
-        label: null,
-        type: null,
-        id: null,
-        parentVar: null,
-        pageVar: null,
-        varName: null,
-        source: null,
-        container: null,
-        mandatory: (props) => {
-          if (mandatory)
-            return `${props.field}.isMandatory = ${props.mandatory};
+      // PascalCase
+      FieldGroup: {
+        add: (props) => {
+          return `const ${props.varName} = ${props.pageVar}.addFieldGroup({
+        id: '${props.id}',
+        label: '${props.label}',
+        ${props.tab ? `tab: ${props.tab}` : ""}
+     })
     `;
-          else return "";
         },
-        credential: (props) => {
-          return `const ${props.varName} = ${props.pageVar}.addCredentialField({
+        attributes: {
+          isPage: false,
+          canSelfClose: false,
+          canHaveChildren: true,
+          possibleChildren: ["Field", "Button"],
+          possibleParents: ["Form", "Assistant"],
+        },
+        props: {
+          variables: {
+            parentVar: null,
+            varName: null,
+            id: null,
+            label: null,
+            tab: null,
+          },
+          methods: {
+            single: (props) => `${props.name}.isSingleColumn;`,
+            collapsible: (props) => `${props.name}.isCollapsible = true;`,
+            collapsed: (props) => `${props.name}.isCollapsed;`,
+            borderHidden: (props) => `${props.name}.isBorderHidden = true;`,
+          },
+        },
+      },
+      Sublist: {
+        add: (props) => {
+          return `const ${props.varName} = ${props.pageVar}.addSublist({
+      id: '${props.id}',
+      label: '${props.label}',
+ 	  ${props.type ? `type: ${props.type},` : ""}
+      ${props.tab ? `tab: ${props.tab}` : ""}
+    });`;
+        },
+        attributes: {
+          isPage: false,
+          canSelfClose: false,
+          canHaveChildren: true,
+          possibleChildren: ["Field", "Button"],
+          possibleParents: ["Form", "Assistant", "List", "Tab"],
+        },
+        props: {
+          // props are what are encapsulated in each JSSX component tag
+          variables: {
+            label: null, // what the user wants to call the component
+            type: null, // the type of component
+            id: null, // the autogenerated id
+            tab: null, // the tab variable that the component belongs to, inferred?
+            parentVar: null,
+            varName: null,
+            pageVar: null,
+          },
+          methods: {
+            markAll: (props) => `${props.varName}.addMarkAllButtons();`,
+          },
+        },
+      },
+      Field: {
+        add: (props) => {
+          return `const ${props.varName} = ${props.parentVar}.addField({
+        id: '${props.id}',
+        ${props.label ? `label: '${props.label}'` : `label: '${props.id}'`},
+        ${props.type ? `type: '${props.type}',` : ""}
+        ${props.source ? `source: '${props.source}',` : ""}
+        ${props.container ? `container: '${props.container}',` : ""}
+      })`;
+        },
+        attributes: {
+          isPage: false,
+          canSelfClose: true,
+          canHaveChildren: true,
+          possibleChildren: ["Select"],
+          possibleParents: ["Form", "Assistant", "Tab", "Sublist", "List"],
+          variants: ["secret", "totalling", "unique"],
+        },
+        props: {
+          variables: {
+            label: null,
+            type: null,
+            id: null,
+            parentVar: null,
+            parentId: null,
+            pageVar: null,
+            varName: null,
+            source: null,
+            container: null,
+            breakType: null,
+          },
+          methods: {
+            credential: (props) => {
+              return `const ${props.varName} = ${
+                props.pageVar
+              }.addCredentialField({
         id: '${props.id}',
         restrictToDomains: '${props.domain}',
         ${props.scriptIds ? `restrictToScriptIds : '${props.scriptIds}'` : ""},
         ${props.restUser ? `restrictToCurrentUser : '${props.restUser}'` : ""},
         ${props.container ? `container: '${props.container}'` : ""}
- })`;
-        },
-        def: (props) => {
-          if (def)
-            return `${props.field}.defaultValue = '${props.def}';        `;
-          else "";
-        },
-        help: (props) => {
-          return `${props.field}.setHelpText({
-    help: '${props.help}'
-  });
-  `;
-        },
-        max: (props) => {
-          return `${props.field}.maxLength = ${props.max};
-  `;
-        },
-        source: () => {},
-        padding: () => {},
-        layout: () => {},
-        display: () => {},
-        select: () => {},
-        secret: (props) => {
-          return `const ${props.varName} = ${props.pageVar}.addSecretKeyField({
+        })`;
+            },
+
+            breakType: (props) => {
+              return `${props.varName}.updateBreakType({
+              breakType: ${props.breakType}
+            });`;
+            },
+            // example:    size={height: 40, width: 50}
+            size: (props) => {
+              return `${props.varName}.updateDisplaySize({
+                  height: ${props.size.height},
+                  width: ${props.size.width}
+              });`;
+            },
+            layout: (props) => {},
+            alias: (props) => {},
+            def: (props) => `${props.field}.defaultValue = '${props.def}';`,
+            help: (props) => {
+              return `${props.field}.setHelpText({
+    		    help: '${props.help}'
+  			    });
+  		      `;
+            },
+            mandatory: (props) =>
+              `${props.field}.isMandatory = ${props.mandatory};`,
+            link: (props) => `${props.varName}.linkText = '${props.link}';`,
+            max: (props) => `${props.field}.maxLength = ${props.max};`,
+            padding: (props) => `${props.varName}.padding = ${props.padding}`,
+            // secret is a special variant of field
+            // it's parent MUST BE a page a secret field cannot be nested in non-page components
+
+            // special Field component variants:
+            // if nested in a fieldGroup or Tab, this parent will be inferred as the container and props.parentId will be the value container is given
+            secret: (props) => {
+              return `const ${props.varName} = ${
+                props.pageVar
+              }.addSecretKeyField({
               id: '${props.id}',
               ${props.label ? `label: '${props.label}'` : `label: ${props.id}`},
-              restrictToScriptIds: '${props.scriptIds}',
-              restrictToCurrentUser: ${props.restUser || false},
-            })
+              ${
+                props.scriptIds
+                  ? `restrictToScriptIds: '${props.scriptIds}',`
+                  : ""
+              }
+              ${
+                props.restUser
+                  ? `restrictToCurrentUser: '${props.restUser}',`
+                  : ""
+              },
+               ${props.container ? `container: '${props.parentId}',` : ""},
+            });
   `;
-        },
-        // the id of the field:
-        totalling: (props) => {
-          return `${props.sublistVar}.updateTotallingField({
+            },
+            // the id of the field:
+            totalling: (props) => {
+              return `${props.sublistVar}.updateTotallingField({
       id: '${props.id}',
 })`;
-        },
-        unique: (props) => {
-          return `${props.sublistVar}.updateUniqueFieldId({
+            },
+            unique: (props) => {
+              return `${props.sublistVar}.updateUniqueFieldId({
   id: '${props.id}',
 })`;
+            },
+          },
         },
       },
-    },
 
-    Select: {
-      add: (props) => {
-        return `${props.fieldVar}.addSelectOption({
+      Select: {
+        add: (props) => {
+          return `${props.fieldVar}.addSelectOption({
                   value : '${props.value}',
                   text : '${props.text}',
                   ${props.isSelected ? `isSelected: true` : ""}
             });
 `;
-      },
-      attributes: {
-        isPage: false,
-        canSelfClose: true,
-        canHaveChildren: false,
-        possibleChildren: null,
-        possibleParents: ["Field"],
-      },
-      props: {
-        isSelected: false,
-        value: null,
-        text: null,
-        parentVar: null, // can only be Field anyways
-      },
-    },
-    Button: {
-      add: (props) => {
-        return `const ${props.varName} = ${props.pageVar}.addButton({
-                id: '${props.id}',
-                ${
-                  props.label
-                    ? `label: '${props.label}'`
-                    : `label: '${props.id}'`
-                },
-                ${props.func ? `func: ${props.func}` : ""}
-            });`;
-      },
-      attributes: {
-        isPage: false,
-        canSelfClose: true,
-        canHaveChildren: false,
-        possibleChildren: null,
-        possibleParents: ["Field", "Form", "Assistant", "Sublist"],
-        options: ["hidden", "submit", "reset"],
-      },
-      props: {
-        label: null,
-        id: null,
-        parentVar: null,
-        varName: null, // the variable name of this button component
-        pageVar: null, // the variable name of the page the button belongs to
-        func: null,
-        disabled: (props) => {
-          return `${props.buttonVar}.clientScriptModulePath = '${props.path}';
-        `;
         },
-        hidden: (props) => {
-          return `${props.buttonVar}.clientScriptFileId = '${props.id}';
-        `;
+        attributes: {
+          isPage: false,
+          canSelfClose: true,
+          canHaveChildren: false,
+          possibleChildren: null,
+          possibleParents: ["Field"],
         },
-        // if submit, id disregarded, label accepted only, default: "Submit Button"
-        submit: (props) => {
-          return `const ${props.varName || "submitBtn"} = ${
-            props.pageVar
-          }.addSubmitButton({
-          ${props.label ? `label: '${props.label}'` : `label: "Submit Button"`},
-        });
-        `;
-        },
-        // if reset, id disregarded, label accepted only, default: "Reset Button"
-        reset: (props) => {
-          return `const ${props.varName || "resetBtn"} = ${
-            props.pageVar
-          }.addResetButton({
-          ${props.label ? `label: '${props.label}'` : `label: "Reset Button"`},
-        });
-        `;
-        },
-        // if reset, id AND label disregarded,
-        refresh: (props) => {
-          return `const refreshBtn = ${props.sublistVar}.addRefreshButton();
-        `;
+        props: {
+          variables: {
+            parent: null,
+            isSelected: false,
+            value: null,
+            text: null,
+            parentVar: null, // can only be Field anyways
+          },
         },
       },
-    },
-    // creates the Page, whether thats a Form, List or Assistant
-    // always gets called in the plugin
-    Write: (res, props) => {
-      return `
+      Button: {
+        add: (props) => {
+          if (props.parent === "Form") {
+            return `const ${props.varName} = ${props.pageVar}.addButton({
+                  id: '${props.id}',
+                  ${
+                    props.label
+                      ? `label: '${props.label}'`
+                      : `label: '${props.id}'`
+                  },
+                  ${props.func ? `func: ${props.func}` : ""}
+              });`;
+          }
+          if (props.parent === "Sublist") {
+            return `const ${props.varName} = ${props.parentVar}.addButton({
+                  id: '${props.id}',
+                  label: '${props.label}',
+              });`;
+          }
+        },
+        attributes: {
+          isPage: false,
+          canSelfClose: true,
+          canHaveChildren: false,
+          possibleChildren: null,
+          possibleParents: ["Field", "Form", "Assistant", "Sublist"],
+          variants: ["hidden", "submit", "reset"],
+        },
+        props: {
+          variables: {
+            parent: null,
+            label: null,
+            id: null,
+            parentVar: null,
+            varName: null, // the variable name of this button component
+            pageVar: null, // the variable name of the page the button belongs to
+            func: null,
+          },
+          methods: {
+            disabled: (props) =>
+              `${props.buttonVar}.clientScriptModulePath = '${props.path}';`,
+            hidden: (props) =>
+              `${props.buttonVar}.clientScriptFileId = '${props.id}';`,
+            // if submit, id disregarded, label accepted only, default: "Submit Button"
+            submit: (props) => {
+              return `const ${props.varName || "submitBtn"} = ${
+                props.pageVar
+              }.addSubmitButton({
+            ${
+              props.label ? `label: '${props.label}'` : `label: "Submit Button"`
+            },
+          });
+          `;
+            },
+            // if reset, id disregarded, label accepted only, default: "Reset Button"
+            // parent MUST be a Page
+            reset: (props) => {
+              return `const ${props.varName || "resetBtn"} = ${
+                props.pageVar
+              }.addResetButton({
+            ${
+              props.label ? `label: '${props.label}'` : `label: "Reset Button"`
+            },
+          });
+          `;
+            },
+            // if reset, id AND label disregarded,
+            refresh: (props) =>
+              `const refreshBtn = ${props.sublistVar}.addRefreshButton();`,
+          },
+        },
+      },
+      // creates the Page, whether thats a Form, List or Assistant
+      // always gets called in the plugin
+      Write: (res, props) => {
+        return `
     ${res}.writePage({
         pageObject: ${props.pageVar}
     })  
 `;
+      },
     },
   };
   ////////////////////////////////////////////////////////////////////
@@ -302,7 +379,19 @@ function createPlugin(babel) {
       let id = null;
       let varName;
       let props = handleProps(type, attrObj, path);
-      //console.log("props:", props);
+      console.log("props:", props);
+      // create new instance of component Object
+      let compObj = SS[type];
+      console.log("compObj", compObj);
+
+      // loop through props handled, and assign them to our compoent object:
+      for (let [key, value] of Object.entries(props)) {
+        console.log("key", key, "value", value);
+        compObj.props.variables = value;
+      }
+
+      console.log("compObj", compObj);
+
       // if none of the below, must be SELECT component, which doesn't need a label/id/title/varName
       //console.log("varName:", props.varName);
       let parentPath = path.findParent((path) => path.isJSXElement()) || null;
@@ -318,20 +407,24 @@ function createPlugin(babel) {
         );
         let parentAttrsArr = parentPath.node.openingElement.attributes;
         console.log(parentAttrsArr);
-        props.parentType = parentPath.node.openingElement.name.name;
-        props.parentVar = handleProps(
+        compObj.parentType = parentPath.node.openingElement.name.name;
+
+        // this is expensive for JUST getting the varName of the parent....?
+        compObj.parentVar = handleProps(
           parentPath.node.openingElement.name.name,
           parentAttrsArr,
           path
         ).varName;
       }
-
+      /*
+/// whats the point in siblings again???? only thing that matters is ancestry here, right?
       let siblingsArr = [
         ...path
           .getAllNextSiblings()
           .filter((sib) => sib.node.type !== "JSXText")
-          .map((sib) => sib.node),
+          .map((sib) => sib.node)
       ];
+      */
       let childArr = [
         ...path.node.children
           .filter((child) => child.type !== "JSXText")
@@ -340,9 +433,8 @@ function createPlugin(babel) {
       //console.log("childArr", childArr);
 
       return {
-        props: props,
-        type: type,
-        siblings: siblingsArr,
+        [type]: compObj,
+        // siblings: siblingsArr,
         children: childArr,
       };
     } catch (err) {
@@ -472,7 +564,7 @@ function createPlugin(babel) {
           // console.log("button is special");
           // console.log("compInput.type:", compInput.type);
           // console.log("propCallsObj:", propCallsObj);
-          suiteScriptSyntax += `\n ${SS[compInput.type].props[
+          suiteScriptSyntax += `\n ${SS[compInput.type].props.methods[
             propCallsObj.special
           ](addPropsObj)}`;
         } else {
@@ -489,8 +581,8 @@ function createPlugin(babel) {
           console.log("key:", key, "value:", value);
 
           if (typeof key === "object") {
-            console.log(SS[compInput.type].props[key]);
-            suiteScriptSyntax += SS[compInput.type].props[key](value);
+            console.log(SS[compInput.type].props.methods[key]);
+            suiteScriptSyntax += SS[compInput.type].props.methods[key](value);
           }
         }
       }
@@ -512,14 +604,17 @@ function createPlugin(babel) {
       const propValNode = prop.value; // won't exist for some Nodes
       const propValExp = prop.value ? prop.value.expression : null; //  won't exist for some Nodes
 
-      // valid prop of component?
+      // valid prop of component in component library?
       console.log(SS[comp].props.hasOwnProperty(propName));
-      if (!SS[comp].props.hasOwnProperty(propName)) {
+      if (
+        !SS[comp].props.variables.hasOwnProperty(propName) &&
+        !SS[comp].props.methods.hasOwnProperty(propName)
+      ) {
         throw path.buildCodeFrameError(
           `ERR: The prop called: '${propName}' is NOT a valid prop in the component: '${comp}'`
         );
       }
-      // is duplicate?
+      // is prop duplicate?
       if (properties.hasOwnProperty(propName)) {
         throw path.buildCodeFrameError(
           `ERR: there is already an prop called: '${propName}' in the component: '${comp}. There cannot be duplicate props in a component'`
@@ -610,18 +705,3 @@ function createPlugin(babel) {
     },
   };
 }
-
-/*
- 
-1) need to establish how we're going to handle special versions of components
-2) if component has OPTIONS, and the compInputObj has a key that is included in the 
-component's options array, then give the propCompObj an option prop with corresponding value
-3) WHY is parent of Sublist and submitBtn Window? It should be Form
-
-** user provided props = values you can put inside of a JSSX component
-** source code props = any value that may be used inside syntax calls
-
-Field: 
-Button: Reset, Refresh, Submit
- 
-*/
