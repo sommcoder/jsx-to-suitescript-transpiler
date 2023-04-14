@@ -13,12 +13,14 @@ function Page() {
           <Select value="123" text="Netflix" />
           <Select value="123" text="Airbnb" />
         </Field>
-        <Button label="Reset Button" />
+        <Button label="Reset Button" reset />
       </Sublist>
-      <Button id="submit_form_button" />
+      <Button label="Submit Button" submit />
     </Form>
   );
 }
 
 /* we may have to consider something special for SELECT.isSelected as it is an attribute but can also be added in the .add() call
  */
+
+// all props go into props object, so if the property is present on the component the template literal will populate with the .isSelected key/value in the add call
