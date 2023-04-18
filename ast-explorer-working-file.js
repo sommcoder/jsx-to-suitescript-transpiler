@@ -24,6 +24,7 @@ function createPlugin(babel) {
         canHaveChildren: true,
         possibleChildren: ["Sublist", "Field", "Button", "Tab", "FieldGroup"],
         possibleParents: null,
+        children: [],
       },
       props: {
         variables: {
@@ -67,6 +68,7 @@ function createPlugin(babel) {
         canHaveChildren: true,
         possibleChildren: ["Field", "Button", "Sublist"],
         possibleParents: ["Form"],
+        children: [],
       },
       props: {
         variables: {
@@ -97,6 +99,7 @@ function createPlugin(babel) {
         canHaveChildren: true,
         possibleChildren: ["Field", "Button"],
         possibleParents: ["Form", "Assistant"],
+        children: [],
       },
       props: {
         variables: {
@@ -129,6 +132,7 @@ function createPlugin(babel) {
         canHaveChildren: true,
         possibleChildren: ["Field", "Button"],
         possibleParents: ["Form", "Assistant", "List", "Tab"],
+        children: [],
       },
       props: {
         // props are what are encapsulated in each JSSX component tag
@@ -165,6 +169,7 @@ function createPlugin(babel) {
         possibleParents: ["Form", "Assistant", "Tab", "Sublist", "List"],
         possibleVariants: ["secret", "totalling", "unique"],
         variant: null,
+        children: [],
       },
       props: {
         variables: {
@@ -387,7 +392,7 @@ function createPlugin(babel) {
 
     // loop through props handled, and assign them to our component object:
     for (let [key, value] of Object.entries(props)) {
-      console.log("key:", key, ", value:", value);
+      // console.log("key:", key, ", value:", value);
       if (
         compObj.attributes.possibleVariants &&
         compObj.attributes.possibleVariants.includes(key)
@@ -398,9 +403,9 @@ function createPlugin(babel) {
       compObj.props.variables[key] = value;
     }
 
-    console.log("compObj", compObj);
+    // console.log("compObj", compObj);
 
-    /* REMOVED PARENT CODE:
+    // REMOVED PARENT CODE:
     // if none of the below, must be SELECT component, which doesn't need a label/id/title/varName
     //console.log("varName:", props.varName);
     let parentPath = path.findParent((path) => path.isJSXElement()) || null;
@@ -413,18 +418,19 @@ function createPlugin(babel) {
       // console.log(parentAttrsArr);
       compObj.parentType = parentPath.node.openingElement.name.name;
       // this is expensive for JUST getting the varName of the parent....?
-      compObj.parentVar = handleProps(compObj.parentType, parentAttrsArr, path).varName;
+      compObj.parentVar = handleProps(
+        compObj.parentType,
+        parentAttrsArr,
+        path
+      ).varName;
     }
-    */
+    /*
+    let childArr = [...path.node.children.filter((child) => child.type !== "JSXText").map((child) => child.openingElement)];
+    // console.log("childArr", childArr);
 
-    let childArr = [
-      ...path.node.children
-        .filter((child) => child.type !== "JSXText")
-        .map((child) => child.openingElement),
-    ];
-    //console.log("childArr", childArr);
     hasValidChildren(childArr, compType, path); // child guard clause
     compObj.children = childArr;
+    */
 
     //console.log("compObj", compObj);
     return {
@@ -437,7 +443,7 @@ function createPlugin(babel) {
 
   // what's happening is when we pass in the Parent, we're getting fucky results
   function handleVars(compType, propsObj, path) {
-    console.log("handleVars propsObj:", propsObj);
+    // console.log("handleVars propsObj:", propsObj);
     //console.log("SS[compType]", SS[compType]);
     if (propsObj.label || propsObj.id || propsObj.title) {
       // id NOT provided && the Type is NOT a Page: create id from label or title
@@ -449,7 +455,7 @@ function createPlugin(babel) {
         compType,
         path
       );
-    } else propsObj.varName = null; // component is a SELECT or special Button component
+    } else propsObj.varName = `${compType}_${seq}`; // component is a SELECT or special Button component
     //console.log("propsObj (handleVars):", propsObj);
     return propsObj;
   }
@@ -482,7 +488,7 @@ function createPlugin(babel) {
 
   // creates a constant variable name of each component
   function createVarName(string, type, path) {
-    console.log("varName: string:", string);
+    //console.log("varName: string:", string);
     const regex = /^[a-zA-Z_\s]+$/;
     // No special character, underscore is allowed
     if (regex.test(string)) {
@@ -505,6 +511,7 @@ function createPlugin(babel) {
       throw path.buildCodeFrameError(ERROR.illegalChar(string));
     }
   }
+
   //////////////////////////////////////////////
   // EXPORTED FUNCTIONS to INDEX.JS
   function getSSComponentCalls(compInput, path) {
@@ -541,10 +548,10 @@ function createPlugin(babel) {
         suiteScriptSyntax = `\n ${SS[compInput.type].add(compProps)}`;
 
         for (let [key, value] of Object.entries(propCallsObj)) {
-          console.log("key:", key, "value:", value);
+          // console.log("key:", key, "value:", value);
 
           if (typeof key === "object") {
-            console.log(SS[compInput.type].props.methods[key]);
+            //  console.log(SS[compInput.type].props.methods[key]);
             suiteScriptSyntax += `\n ${SS[compInput.type].props.methods[key](
               value
             )}`;
@@ -557,8 +564,8 @@ function createPlugin(babel) {
 
   // Function NOT being used currently!
   function hasValidChildren(childNamesArr, compType, path) {
-    console.log(compType);
-    console.log(childNamesArr);
+    // console.log(compType);
+    // console.log(childNamesArr);
     if (
       !childNamesArr.every((child) =>
         SS[compType].attributes.possibleChildren.includes(child.name.name)
@@ -568,7 +575,7 @@ function createPlugin(babel) {
         `ERR: there is an invalid child in the component: '${compType}`
       );
     } else {
-      console.log("good kids");
+      // console.log("good kids");
     }
   }
 
@@ -629,8 +636,8 @@ function createPlugin(babel) {
         // Could we use t.isBinding() for this?
       }
     });
-    console.log("handleProps:", propsObj);
-    console.log("handleVars return: ", handleVars(compType, propsObj, path));
+    //console.log("handleProps:", propsObj);
+    //console.log("handleVars return: ", handleVars(compType, propsObj, path));
     return handleVars(compType, propsObj, path);
   }
   //////////////////////////////////////////////////////////////
@@ -638,25 +645,25 @@ function createPlugin(babel) {
   //////////////////////////////////////////////////////////////
 
   // Global Object: this is where we track the components insertion order
-  const pageObj = {}; // tree structure that indicates the relationship between components
-  const syntaxArr = []; // the queue of SS strings for replacing JSX
+  const pageObj = {}; // Tree structure that indicates the relationship between components
+  const syntaxArr = []; // The queue of SS strings for replacing JSX
+  const compStack = []; // Component sequence state
   let pageVar = "";
+  let seq = 0;
 
   return {
     name: "jssx",
     visitor: {
       JSXElement(path) {
-        console.log(path.scope.generateUidIdentifier("id"));
-        console.log("path.key", path.key);
+        console.log("TRAVERSE #:", seq++);
         // Might need to come back to this later, hoping the closing element does
         // not cause a SECOND visit of the same JSSX component
-        console.log(path.node);
-        console.log("path.node.closingElement??", path.node.closingElement);
+
+        // console.log("path.node.closingElement??", path.node.closingElement);
         // if the NodePath does not have a closing element therefore IT IS the closing element
         // and we should not traverse the NodePath again.
         let compType = path.node.openingElement.name.name;
-        console.log("NEW VISIT OF:", compType);
-
+        console.log("NODE:", compType, ":", path.node);
         //  if (path.node.closingElement === null) {
         //    console.log(`${compType}'s NodePath has NO closingElement`);
         //    path.skip();
@@ -673,17 +680,33 @@ function createPlugin(babel) {
 
         // if no attributes, the syntax/component is void!
         let propsArr = path.node.openingElement.attributes;
-        console.log("propsArr", propsArr);
+        // console.log("propsArr", propsArr);
         if (propsArr) {
           // assign pageObj its initial key/values
           currComp = createCompObj(compType, propsArr, path);
-          //console.log("currComp", currComp);
-          // first component is Page:
+          console.log("currComp", currComp);
+          // push all components to the stack
+          compStack.push(currComp);
 
-          if (Object.keys(pageObj).length === 0) {
+          // first component is Page:
+          if (Object.keys(pageObj).length !== 0) {
+            // if current components has parent, assign currComp to it's children array
+            if (currComp.parentVar) {
+              console.log("compStack last:", compStack[seq - 1]);
+              console.log(pageObj[compStack[seq - 1]]);
+              pageObj[compStack[seq - 1]].children.push(currComp);
+            }
+            pageObj[currComp.props.variables.varName || currComp.type] =
+              currComp;
+
+            // console.log("pageObj", pageObj);
+            // Check for lineage?
+          } else {
             pageVar = currComp.props.variables.varName;
+
+            pageObj[currComp.props.variables.varName || currComp.type] =
+              currComp;
           }
-          pageObj[compType] = currComp;
         } else {
           throw path.buildCodeFrameError(
             `ERROR: jsx compType: ${compType} does not have any attributes and therefore must be void!`
@@ -691,6 +714,7 @@ function createPlugin(babel) {
         }
 
         console.log("pageObj", pageObj);
+        console.log("compStack:", compStack);
         /*
         let ss = getSSComponentCalls(currComp, path);
         // console.log("typeof:", typeof ss, "\n ss: \n", ss);
@@ -708,4 +732,53 @@ function createPlugin(babel) {
  
 ultimately, we need a way of identifying each component
  
+*/
+
+/*
+ 
+ultimately, we need a way of identifying each component
+ 
+*/
+
+/*
+ 
+ultimately, we need a way of identifying each component
+ 
+Breadth First? Get Siblings, get Children, traverse children,
+
+
+First Component:
+1) Must be a Page
+2) Must NOT have a sibling
+3) Must have at least one child
+4) Must have props
+
+How do we know if the currComp is a child or a sibling of the prevComp?
+
+
+Could we reattempt a recursive method?
+
+- Initial Component. Is Page?
+- Has Attributes? Handle Attributes.
+- Add to Tree
+- Has Sibling? VOID! Page cannot have siblings
+
+- Get Children, handle Children.
+- Has Children? Needs at least one child! Handle each Child
+- Has Attributes? Handle Attributes.
+- Add to Tree (from the Root/Page)
+
+
+
+
+
+Have a stack for iterative implementations. Nodes can be pushed in and popped off the stack until there are no more nodes in the tree left to traverse
+
+
+
+
+
+
+
+
 */
