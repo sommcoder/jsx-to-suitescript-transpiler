@@ -689,33 +689,40 @@ function createPlugin(babel) {
 
           // COMP IS NOT PAGE,
           if (Object.keys(pageObj).length !== 0) {
+            console.log("comp is NOT page");
+
             // if current component has parent, assign currComp to it's children array
-            if (currComp.parentVar) {
+            if (currComp.props.variables.parentVar) {
               // find the 1st comp that has a varName that matches the currComp's parentVar variable
               let parentComp = compStack.find(
-                (comp) => comp.props.variables.varName === currComp.parentVar
+                (comp) =>
+                  comp.props.variables.varName ===
+                  currComp.props.variables.parentVar
               );
-              // console.log("parentComp:", parentComp);
+              console.log("parentComp:", parentComp);
               //console.log("pageObj 1:", pageObj[parentComp.props.variables.varName]);
               pageObj[
                 parentComp.props.variables.varName
               ].attributes.children.push(currComp);
               // console.log("pageObj 2:", pageObj);
-            } else {
-              // COMP IS PAGE:
-              pageObj[currComp.props.variables.varName] = currComp;
-            }
 
+              // No parentVar Error:
+            } else {
+              throw path.buildCodeFrameError(
+                `ERROR: jssx component: ${currComp.props.variables.varName}, does not have a parentVar`
+              );
+            }
             // console.log("pageObj", pageObj);
           } else {
+            // COMP IS PAGE:
+            console.log("comp is page");
             pageVar = currComp.props.variables.varName;
-
-            pageObj[currComp.props.variables.varName || currComp.type] =
-              currComp;
+            pageObj[currComp.props.variables.varName] = currComp;
           }
+          // No Props error:
         } else {
           throw path.buildCodeFrameError(
-            `ERROR: jsx compType: ${compType} does not have any attributes and therefore must be void!`
+            `ERROR: jssx compType: ${compType} does not have any attributes and therefore is void!`
           );
         }
 
@@ -735,18 +742,6 @@ function createPlugin(babel) {
     },
   };
 }
-
-/*
- 
-ultimately, we need a way of identifying each component
- 
-*/
-
-/*
- 
-ultimately, we need a way of identifying each component
- 
-*/
 
 /*
  
