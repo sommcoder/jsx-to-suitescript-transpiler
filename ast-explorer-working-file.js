@@ -403,11 +403,9 @@ function createPlugin(babel) {
       compObj.props.variables[key] = value;
     }
 
-    // console.log("compObj", compObj);
+    //console.log("compObj (createCompObj)", compObj);
 
-    // REMOVED PARENT CODE:
     // if none of the below, must be SELECT component, which doesn't need a label/id/title/varName
-    //console.log("varName:", props.varName);
     let parentPath = path.findParent((path) => path.isJSXElement()) || null;
     //console.log("parentPath:", parentPath);
     // if parent exists:
@@ -416,13 +414,15 @@ function createPlugin(babel) {
       // console.log("comp compType:", compType, "& parent.node:", parentPath.node.openingElement);
       let parentAttrsArr = parentPath.node.openingElement.attributes;
       // console.log(parentAttrsArr);
-      compObj.parentType = parentPath.node.openingElement.name.name;
+      compObj.props.variables.parentType =
+        parentPath.node.openingElement.name.name;
       // this is expensive for JUST getting the varName of the parent....?
-      compObj.parentVar = handleProps(
-        compObj.parentType,
+      compObj.props.variables.parentVar = handleProps(
+        compObj.props.variables.parentType,
         parentAttrsArr,
         path
       ).varName;
+      // Not getting sublist's parentVar to be Form's varName
     }
     /*
     let childArr = [...path.node.children.filter((child) => child.type !== "JSXText").map((child) => child.openingElement)];
@@ -432,7 +432,7 @@ function createPlugin(babel) {
     compObj.children = childArr;
     */
 
-    //console.log("compObj", compObj);
+    // console.log("compObj", compObj);
     return {
       type: compType,
       ...compObj,
@@ -655,7 +655,6 @@ function createPlugin(babel) {
     name: "jssx",
     visitor: {
       JSXElement(path) {
-        console.log("TRAVERSE #:", seq++);
         // Might need to come back to this later, hoping the closing element does
         // not cause a SECOND visit of the same JSSX component
 
@@ -684,23 +683,30 @@ function createPlugin(babel) {
         if (propsArr) {
           // assign pageObj its initial key/values
           currComp = createCompObj(compType, propsArr, path);
-          console.log("currComp", currComp);
+          // console.log("currComp", currComp);
           // push all components to the stack
           compStack.push(currComp);
 
-          // first component is Page:
+          // COMP IS NOT PAGE,
           if (Object.keys(pageObj).length !== 0) {
-            // if current components has parent, assign currComp to it's children array
+            // if current component has parent, assign currComp to it's children array
             if (currComp.parentVar) {
-              console.log("compStack last:", compStack[seq - 1]);
-              console.log(pageObj[compStack[seq - 1]]);
-              pageObj[compStack[seq - 1]].children.push(currComp);
+              // find the 1st comp that has a varName that matches the currComp's parentVar variable
+              let parentComp = compStack.find(
+                (comp) => comp.props.variables.varName === currComp.parentVar
+              );
+              // console.log("parentComp:", parentComp);
+              //console.log("pageObj 1:", pageObj[parentComp.props.variables.varName]);
+              pageObj[
+                parentComp.props.variables.varName
+              ].attributes.children.push(currComp);
+              // console.log("pageObj 2:", pageObj);
+            } else {
+              // COMP IS PAGE:
+              pageObj[currComp.props.variables.varName] = currComp;
             }
-            pageObj[currComp.props.variables.varName || currComp.type] =
-              currComp;
 
             // console.log("pageObj", pageObj);
-            // Check for lineage?
           } else {
             pageVar = currComp.props.variables.varName;
 
@@ -715,6 +721,8 @@ function createPlugin(babel) {
 
         console.log("pageObj", pageObj);
         console.log("compStack:", compStack);
+
+        seq++;
         /*
         let ss = getSSComponentCalls(currComp, path);
         // console.log("typeof:", typeof ss, "\n ss: \n", ss);
@@ -727,6 +735,18 @@ function createPlugin(babel) {
     },
   };
 }
+
+/*
+ 
+ultimately, we need a way of identifying each component
+ 
+*/
+
+/*
+ 
+ultimately, we need a way of identifying each component
+ 
+*/
 
 /*
  
