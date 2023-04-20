@@ -22,7 +22,6 @@ function createPlugin(babel) {
         isPage: true,
         possibleChildren: ["Sublist", "Field", "Button", "Tab", "FieldGroup"],
         possibleParents: null,
-        children: [],
       },
       props: {
         variables: {
@@ -64,7 +63,6 @@ function createPlugin(babel) {
         isPage: false,
         possibleChildren: ["Field", "Button", "Sublist"],
         possibleParents: ["Form"],
-        children: [],
       },
       props: {
         variables: {
@@ -93,7 +91,6 @@ function createPlugin(babel) {
         isPage: false,
         possibleChildren: ["Field", "Button"],
         possibleParents: ["Form", "Assistant"],
-        children: [],
       },
       props: {
         variables: {
@@ -124,7 +121,6 @@ function createPlugin(babel) {
         isPage: false,
         possibleChildren: ["Field", "Button"],
         possibleParents: ["Form", "Assistant", "List", "Tab"],
-        children: [],
       },
       props: {
         // props are what are encapsulated in each JSSX component tag
@@ -146,11 +142,12 @@ function createPlugin(babel) {
       add: (props) => {
         return `const ${props.varName} = ${props.parentVar}.addField({
         id: '${props.id}',
-        ${props.label ? `label: '${props.label}'` : `label: '${props.id}'`},${
-          props.type ? `\n type: '${props.type}',` : ""
-        }${props.source ? `\n source: '${props.source}',` : ""}${
-          props.container ? `\n container: '${props.container}',` : ""
+        ${
+          props.label ? `label: '${props.label}'` : `label: '${props.varName}'`
+        },${props.type ? `\n type: '${props.type}',` : ""}${
+          props.source ? `\n source: '${props.source}',` : ""
         }
+		${props.container ? `\n container: '${props.container}',` : ""}
       });`;
       },
       attributes: {
@@ -158,8 +155,6 @@ function createPlugin(babel) {
         possibleChildren: ["Select"],
         possibleParents: ["Form", "Assistant", "Tab", "Sublist", "List"],
         possibleVariants: ["secret", "totalling", "unique"],
-        variant: null,
-        children: [],
       },
       props: {
         variables: {
@@ -295,11 +290,9 @@ function createPlugin(babel) {
         possibleChildren: null,
         possibleParents: ["Field", "Form", "Assistant", "Sublist"],
         possibleVariants: ["hidden", "submit", "reset"],
-        variant: null,
       },
       props: {
         variables: {
-          parent: null,
           label: null,
           id: null,
           parentVar: null,
@@ -501,21 +494,23 @@ function createPlugin(babel) {
       ); // initial syntax assignment
     } else {
       // NOT PAGE COMPONENT:
-      if (currNode.compType === "Button") {
-        console.log("comp is button");
-        if (currNode.variant) {
-          console.log("button is special");
-          // console.log("compInput.type:", compInput.type);
-          // console.log("propCallsObj:", propCallsObj);
-          suiteScriptSyntax += `\n ${SS[currNode.compType].props.methods[
-            currNode.variant
-          ](currNode.props.arguments)}`;
-        } else {
-          // is button, but not special button:
-          suiteScriptSyntax += `\n ${SS[currNode.compType].add(
-            currNode.props.arguments
-          )}`;
-        }
+      // is COMPONENT a VARIANT?:
+      if (currNode.variant) {
+        console.log("button is variant");
+        suiteScriptSyntax += `${SS[currNode.compType].props.methods[
+          currNode.variant
+        ](currNode.props.arguments)}`;
+      } else {
+        suiteScriptSyntax += `${SS[currNode.compType].add(
+          currNode.props.arguments
+        )}`;
+      }
+      // loop through other method calls (aside for .add() and variant methods):
+      for (let [key, value] of Object.entries(currNode.props.methods)) {
+        console.log("key:", key, "value:", value);
+        suiteScriptSyntax += `${SS[currNode.compType].props.methods(
+          currNode.props.arguments
+        )}`;
       }
     }
 
@@ -555,7 +550,7 @@ function createPlugin(babel) {
       }
     }
     */
-    console.log(suiteScriptSyntax);
+    console.log("suiteScriptSyntax:", suiteScriptSyntax);
     return suiteScriptSyntax;
   }
 
@@ -725,7 +720,7 @@ function createPlugin(babel) {
         // console.log("typeof:", typeof ss, "\n ss: \n", ss);
         syntaxArr.push(ss);
         console.log(syntaxArr);
-        // console.log(syntaxArr.join(""));
+        console.log(syntaxArr.join(""));
 
         //path.replaceWithSourceString(`syntaxArr.join("")`);
         //path.skip();
