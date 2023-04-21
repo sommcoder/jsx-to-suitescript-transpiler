@@ -1,20 +1,17 @@
 exports.default = createPlugin;
 
-const ui = "ui";
-
 function createPlugin(babel) {
   const { types: t } = babel;
-
   const { template } = babel;
-  //console.log("template", template);
+  // console.log("template", template);
   //console.log(template.ast);
 
   //////////////////////////// SUITESCRIPT LIBRARY
   const SS = {
     Form: {
       // ui comes from outside the scope of the component function
-      add: (ui, props) => {
-        return `const ${props.varName} = ${ui}.createForm({
+      add: (props) => {
+        return `const ${props.varName} = ${props.ui}.createForm({
         title: '${props.title}',
       });`;
       },
@@ -30,15 +27,12 @@ function createPlugin(babel) {
           title: null,
           module: null,
           fileId: null,
-          navBar: null,
         },
         methods: {
           module: (props) =>
-            `${props.pageVar}.clientScriptModulePath = '${props.path}';`,
+            `${props.varName}.clientScriptModulePath = '${props.module}';`,
           fileId: (props) =>
-            `${props.pageVar}.clientScriptFileId = '${props.id}';`,
-          navBar: (props) =>
-            `${props.pageVar}.clientScriptFileId = '${props.id}';`,
+            `${props.varName}.clientScriptFileId = '${props.fileId}';`,
         },
       },
     },
@@ -110,7 +104,7 @@ function createPlugin(babel) {
     },
     Sublist: {
       add: (props) => {
-        return `const ${props.varName} = ${props.pageVar}.addSublist({
+        return `const ${props.varName} = ${props.parentVar}.addSublist({
       id: '${props.id}',
       label: '${props.label}',${props.type ? `\n type: ${props.type},` : ""}${
           props.tab ? `\n tab: ${props.tab}` : ""
@@ -363,6 +357,8 @@ function createPlugin(babel) {
     path.node.children = path.node.children.filter(
       (child) => child.type !== "JSXText"
     );
+    console.log(path.node.children);
+    hasValidChildren(path.node.children, path.node.compType, path);
     // Arguments get passed into the methods:
     path.node.props = {
       arguments: {},
@@ -374,15 +370,30 @@ function createPlugin(babel) {
       path.node.openingElement.attributes,
       path
     );
-
+    console.log("props:", props);
     // PARENT, only if JSXElement
     let parentPath = path.findParent((path) => path.isJSXElement()) || null;
+    console.log("parentPath", parentPath);
     if (parentPath) {
       path.node.parentNode = parentPath.node;
       props.parentVar = path.node.parentNode.props.arguments.varName;
       console.log("props.parentVar", props.parentVar);
-    } else path.node.parentNode = parentPath;
+    } else {
+      /* 
+      Trying to access the serverWidget in the use case where our JSSX is WITHIN a onRequest function.
+      
+      */
 
+      let parentPath = path.findParent((path) => path.isFunctionExpression());
+      console.log(parentPath);
+      let funcParent = path.getFunctionParent();
+      console.log("funcParent", funcParent);
+      let ui = funcParent.container
+        .find((el) => el.type === "ArrowFunctionExpression")
+        .params.find((param) => param.name === "serverWidget").name;
+      path.node.parentNode = null;
+      path.node.props.variables.ui = ui;
+    }
     // create new instance of component Object from component library:
     let compObj = SS[path.node.compType];
     // loop through props handled and assign them back to the current Node:
@@ -483,84 +494,53 @@ function createPlugin(babel) {
   function getSSComponentCalls(currNode, path) {
     console.log("currNode (SS Component Calls:", currNode);
 
-    let suiteScriptSyntax;
-
-    // PAGE COMPONENT:
+    // CREATE PAGE COMPONENT:
     if (SS[currNode.compType].attributes.isPage) {
-      console.log("PAGE COMPONENT!");
-      suiteScriptSyntax = SS[currNode.compType].add(
-        ui,
+      // console.log("PAGE COMPONENT!");
+      suiteScriptSyntax = `\n ${SS[currNode.compType].add(
         currNode.props.arguments
-      ); // initial syntax assignment
+      )}`; // initial syntax assignment
     } else {
-      // NOT PAGE COMPONENT:
+      // CREATE NOT PAGE COMPONENT:
       // is COMPONENT a VARIANT?:
       if (currNode.variant) {
-        console.log("button is variant");
-        suiteScriptSyntax += `${SS[currNode.compType].props.methods[
+        // console.log("Node is a variant");
+        suiteScriptSyntax += `\n\n ${SS[currNode.compType].props.methods[
           currNode.variant
         ](currNode.props.arguments)}`;
       } else {
-        suiteScriptSyntax += `${SS[currNode.compType].add(
+        console.log("Node is NOT a variant");
+        suiteScriptSyntax += `\n\n ${SS[currNode.compType].add(
           currNode.props.arguments
         )}`;
       }
-      // loop through other method calls (aside for .add() and variant methods):
+    }
+    // HANDLE OTHER METHOD CALLS:
+    // loop through other method calls (aside for .add() and variant methods):
+    if (Object.keys(currNode.props.methods).length > 0) {
+      console.log("has additional methods!");
       for (let [key, value] of Object.entries(currNode.props.methods)) {
-        console.log("key:", key, "value:", value);
-        suiteScriptSyntax += `${SS[currNode.compType].props.methods(
-          currNode.props.arguments
-        )}`;
+        // console.log("key:", key, "value:", value);
+        suiteScriptSyntax +
+          `\n\n ${SS[currNode.compType].props.methods[key](
+            currNode.props.arguments
+          )}`;
       }
     }
-
-    /*
-    // ADD COMPONENT SYNTAX, arguments are spread because .add's parameters vary across components:
-    // ADD Page component:
-    if (SS[compInput.type].attributes.isPage) {
-      console.log("PAGE COMPONENT!");
-      suiteScriptSyntax = SS[compInput.type].add(ui, compProps); // initial syntax assignment
-    } else {
-      // whether the call is reset/submit/refresh they all accept the prop object and return string
-      if (compInput.type === "Button") {
-        console.log("comp is button");
-        if (compProps.special) {
-          // console.log("button is special");
-          // console.log("compInput.type:", compInput.type);
-          // console.log("propCallsObj:", propCallsObj);
-          suiteScriptSyntax += `\n ${SS[compInput.type].props.methods[compProps.special](compProps)}`;
-        } else {
-          // is button, but not special button:
-          suiteScriptSyntax += `\n ${SS[compInput.type].add(compProps)}`;
-        }
-      } else {
-        // ADD non-Page component:
-        console.log("NOT PAGE!");
-
-        suiteScriptSyntax = `\n ${SS[compInput.type].add(compProps)}`;
-
-        for (let [key, value] of Object.entries(propCallsObj)) {
-          // console.log("key:", key, "value:", value);
-
-          if (typeof key === "object") {
-            //  console.log(SS[compInput.type].props.methods[key]);
-            suiteScriptSyntax += `\n ${SS[compInput.type].props.methods[key](value)}`;
-          }
-        }
-      }
-    }
-    */
     console.log("suiteScriptSyntax:", suiteScriptSyntax);
+    path.stop();
     return suiteScriptSyntax;
   }
 
   // Function NOT being used currently!
   function hasValidChildren(childNamesArr, compType, path) {
-    // console.log(compType);
-    // console.log(childNamesArr);
+    console.log(compType);
+    console.log(childNamesArr);
     if (
       !childNamesArr.every((child) =>
-        SS[compType].attributes.possibleChildren.includes(child.name.name)
+        SS[compType].attributes.possibleChildren.includes(
+          child.openingElement.name.name
+        )
       )
     ) {
       throw path.buildCodeFrameError(
@@ -574,7 +554,7 @@ function createPlugin(babel) {
   function handleProps(compType, propsArr, path) {
     let propsObj = {}; // new props object per component visit
     //console.log('comptype:', compType);
-    // console.log("propsArr:", propsArr);
+    console.log("propsArr:", propsArr);
     propsArr.forEach((prop) => {
       const propName = prop.name.name;
       const propValNode = prop.value; // won't exist for some Nodes
@@ -582,11 +562,16 @@ function createPlugin(babel) {
       //  console.log("prop", prop);
       // valid prop of component in component library?
       //console.log(SS[comp].props.variables.hasOwnProperty(propName));
-      /*
-      if (!SS[compType].props.variables.hasOwnProperty(propName) && !SS[compType].props.methods.hasOwnProperty(propName)) {
-        throw path.buildCodeFrameError(`ERR: The prop called: '${propName}' is NOT a valid prop in the component: '${compType}'`);
+
+      if (
+        !SS[compType].props.variables.hasOwnProperty(propName) &&
+        !SS[compType].props.methods.hasOwnProperty(propName)
+      ) {
+        throw path.buildCodeFrameError(
+          `ERR: The prop called: '${propName}' is NOT a valid prop in the component: '${compType}'`
+        );
       }
-      */
+
       // is prop duplicate?
       if (propsObj.hasOwnProperty(propName)) {
         throw path.buildCodeFrameError(
@@ -638,10 +623,10 @@ function createPlugin(babel) {
 
   // Global Object: this is where we track the components insertion order
   const pageObj = {}; // Tree structure that indicates the relationship between components
-  const syntaxArr = []; // The queue of SS strings for replacing JSX
   const compStack = []; // Component sequence state
   let pageVar = "";
   let seq = 0;
+  let suiteScriptSyntax;
 
   return {
     name: "jssx",
@@ -675,96 +660,35 @@ function createPlugin(babel) {
         if (Object.keys(pageObj).length === 0)
           pageVar = currNode.props.arguments.varName;
 
-        /*
-        if (propsArr) {
-          // assign pageObj its initial key/values
-        
-
-          // push all components to the stack
-          compStack.push(currNode);
-
-          // COMP IS NOT PAGE,
-        
-          if (Object.keys(pageObj).length !== 0) {
-            console.log("comp is NOT page");
-
-           
-            // if current component has parent, assign currComp to it's children array
-            if (currNode.arguments.varName) {
-              // find the 1st comp that has a varName that matches the currComp's parentVar variable
-              let parentComp = compStack.find((comp) => comp === currComp.props.variables.parentVar);
-              console.log("parentComp:", parentComp);
-              console.log("pageObj", pageObj);
-              console.log("pageObj 1:", pageObj[parentComp]);
-              pageObj[pageVar].attributes.children.push(currComp);
-              // console.log("pageObj 2:", pageObj);
-
-              // No parentVar Error:
-            } else {
-              throw path.buildCodeFrameError(`ERROR: jssx component: ${currComp.props.variables.varName}, does not have a parentVar`);
-            }
-            // console.log("pageObj", pageObj);
-          } else {
-            // COMP IS PAGE:
-            console.log("comp is page");
-            pageVar = currComp.props.variables.varName;
-            pageObj[currComp.props.variables.varName] = currComp;
-          }
-          // No Props error:
-        } else {
-          throw path.buildCodeFrameError(`ERROR: jssx compType: ${compType} does not have any attributes and therefore is void!`);
-        }
-        */
-
         let ss = getSSComponentCalls(currNode, path);
-        // console.log("typeof:", typeof ss, "\n ss: \n", ss);
-        syntaxArr.push(ss);
-        console.log(syntaxArr);
-        console.log(syntaxArr.join(""));
+        const NODE = babel.template.statement.ast`${ss}`;
+        console.log("NODE", NODE);
+        // path.replaceWith(NODE);
+        //path.skip();
 
-        //path.replaceWithSourceString(`syntaxArr.join("")`);
+        //syntaxArr.push(ss);
+        // console.log(syntaxArr);
+        // console.log(syntaxArr.join(""));
+        // path.replaceWithSourceString(`${suiteScriptSyntax}`);
         //path.skip();
       },
+      /*  FunctionDeclaration(path) {
+        // AND get any variable declarations,  path.replaceWith('') empty string.
+        // AND get the return statement,  path.replaceWith('') empty string.
+        console.log(path.node);
+        let returnStatement = path.node.body.body.find((node) => node.type === "ReturnStatement");
+        console.log(returnStatement);
+
+        // if function declaration has a return statement with an argument of JSXElement, path.replaceWith('') empty string.
+        if (returnStatement.argument.type === "JSXElement") {
+          for (let i = 0; i < path.node.body.body.length; i++) {
+            // remove VariableDeclarations in the body
+            if (path.node.body.body[i].type === "VariableDeclaration") {
+            //  path.node.body.body[i] = "";
+            }
+          }
+        } else return;
+      } */
     },
   };
 }
-
-/*
-Breadth First? Get Siblings, get Children, traverse children,
-
-
-First Component:
-1) Must be a Page
-2) Must NOT have a sibling
-3) Must have at least one child
-4) Must have props
-
-How do we know if the currComp is a child or a sibling of the prevComp?
-
-
-Could we reattempt a recursive method?
-
-- Initial Component. Is Page?
-- Has Attributes? Handle Attributes.
-- Add to Tree
-- Has Sibling? VOID! Page cannot have siblings
-
-- Get Children, handle Children.
-- Has Children? Needs at least one child! Handle each Child
-- Has Attributes? Handle Attributes.
-- Add to Tree (from the Root/Page)
-
-
-
-
-
-Have a stack for iterative implementations. Nodes can be pushed in and popped off the stack until there are no more nodes in the tree left to traverse
-
-
-
-
-
-
-
-
-*/
