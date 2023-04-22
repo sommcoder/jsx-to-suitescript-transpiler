@@ -1,6 +1,6 @@
 {
-  "name": "jsx-to-ss-transpiler",
-  "version": "0.1.0",
+  "name": "jsx-to-ss",
+  "version": "0.1.2",
   "description": "transpiles JSX syntax into NetSuite-readable SuiteScript 2.0 API calls",
   "main": "index.js",
   "scripts": {

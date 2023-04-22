@@ -12,7 +12,7 @@ function createPlugin(babel) {
       // ui comes from outside the scope of the component function
       add: (props) => {
         return `const ${props.varName} = ${props.ui}.createForm({
-        title: '${props.title}',
+        title: '${props.title}',${props.navBar ? `hideNavBar: true` : ""}
       });`;
       },
       attributes: {
@@ -56,7 +56,7 @@ function createPlugin(babel) {
       attributes: {
         isPage: false,
         possibleChildren: ["Field", "Button", "Sublist"],
-        possibleParents: ["Form"],
+        possibleParents: ["Form", "List", "Assistant", "FieldGroup"],
       },
       props: {
         variables: {
@@ -84,7 +84,7 @@ function createPlugin(babel) {
       attributes: {
         isPage: false,
         possibleChildren: ["Field", "Button"],
-        possibleParents: ["Form", "Assistant"],
+        possibleParents: ["Form", "Assistant", "List", "Tab"],
       },
       props: {
         variables: {
@@ -104,7 +104,7 @@ function createPlugin(babel) {
     },
     Sublist: {
       add: (props) => {
-        return `const ${props.varName} = ${props.parentVar}.addSublist({
+        return `const ${props.varName} = ${props.pageVar}.addSublist({
       id: '${props.id}',
       label: '${props.label}',${props.type ? `\n type: ${props.type},` : ""}${
           props.tab ? `\n tab: ${props.tab}` : ""
@@ -380,7 +380,17 @@ function createPlugin(babel) {
       console.log("props.parentVar", props.parentVar);
     } else {
       /* 
+      
       Trying to access the serverWidget in the use case where our JSSX is WITHIN a onRequest function.
+      
+      
+      ALSO!!! How are we going to handle Tabs since <Tab> would be the parent for <Field> but there is 
+      no Tab.addField().. maybe we create a variant... 
+      
+      - Firstly, lets look into the SuiteScript code for Tab
+      - when sublist is given a tab value, skip
+      - If parent is Tab: path.node.props.tab = tabId
+      
       
       */
 
