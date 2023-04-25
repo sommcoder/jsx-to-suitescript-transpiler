@@ -15,23 +15,31 @@ Page components wrap valid child components within them like regular HTML/XML el
 this:
 
 ```javascript
-const Form = ui.createForm({});
-Form.addField({});
+const Form = ui.createForm({
+  title: "Distribution Form",
+});
+Form.addField({
+  id: "custpage_rate_field",
+  label: "Rate Field",
+});
 ```
 
 would be:
 
 ```javascript
-<Form>
-  <Field />
+<Form title="Distribution Form">
+  <Field label="Rate Field" />
 </Form>
 ```
 
 this:
 
 ```javascript
-const Sublist = Form.addSublit({});
-Sublist.addButton({});
+const Sublist = Form.addSublist({});
+Sublist.addButton({
+  id: "custpage_enter_button",
+  label: "",
+});
 ```
 
 would be:
@@ -107,7 +115,7 @@ suiteletSublist.addField({
 });
 ```
 
-CAN BE EXPRESSED LIKE THIS:
+CAN BE EXPRESSED CONDENSED AND READABLE LIKE THIS:
 
 ```javascript
 <Form title="Customer Form">
@@ -128,7 +136,7 @@ CAN BE EXPRESSED LIKE THIS:
 </Form>
 ```
 
-As you can see, you do not need to specify a FieldGroup to have a Tab as it's parent. This relationship is inferred by wrapping the FieldGroup in the Tab component.
+As you can see, you do not need to specify a Tab id if you want a FieldGroup to have a Tab as it's parent. This relationship is inferred by wrapping the FieldGroup in the Tab component.
 
 The same applies to a Field in a FieldGroup. If Field's parent is FieldGroup, the Field API call will have the FieldGroups id as the value for the options.container key.
 
@@ -153,6 +161,28 @@ Form.addField({
     container: "custpage_customer_number_fieldgroup"
 });
 ```
+
+# No need to write component Id's Imperatively
+
+In fact there's no need to specify id's with JSSX in general.
+
+The custpage\_ prefix is automatically added to each component based on their label or title (if Page).
+
+The component type is added to the end of the component id if it isn't already specified.
+
+so
+
+```JavaScript
+<Sublist label="Item History" />
+```
+
+will contain this in the Sublist's options object:
+
+```JavaScript
+id: custpage_item_history_sublist
+```
+
+One less verbose element to worry about!
 
 # Small Changes, as Needed
 
@@ -191,22 +221,54 @@ Would be expressed like this:
 </Tab>
 ```
 
-# No need to write component Id's Imperatively
-
-The custpage prefix is automatically added to each component based on their label or title (if Page).
-
-The component type is added to the end of the component id if it isn't already specified.
-
-so
+SuiteScript Component Hierachy is as follow:
 
 ```JavaScript
-<Sublist label="Item History" />
+<Page>
+    <Tab>
+        <FieldGroup>
+            <Field />
+        </FieldGroup>
+    </Tab>
+    <Tab>
+        <Sublist>
+            <Field />
+            <Field />
+            <Field />
+            <Field>
+                <Select/>
+                <Select/>
+                <Select/>
+                <Select/>
+            </Field>
+        </ Sublist>
+    </Tab>
+</Page>
 ```
 
-will contain this in the Sublist's options object:
+# <Select> Component
+
+In order to uphold our purpose as a library to allow for SuiteScript UI's to be more readable, we opted to create a new component which is essentially syntactic sugar for a Field.addSelectOptions(). By having select be it's own component we believe this provides better readability.
+
+THIS:
 
 ```JavaScript
-id: custpage_item_history_sublist
+    <Field>
+        <Select value="true" text="true" isSelected/>
+        <Select value="false" text="false"/>
+    </Field>
 ```
 
-One less verbose element to worry about!
+Would be transpiled to this:
+
+```JavaScript
+      Field.addSelectOptions({
+          value: "true",
+          text: "true",
+          isSelected: true
+      });
+      Field.addSelectOptions({
+          value: "false",
+          text: "false",
+      });
+```
