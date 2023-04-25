@@ -2,10 +2,6 @@ exports.default = createPlugin;
 
 function createPlugin(babel) {
   const { types: t } = babel;
-  const { template } = babel;
-  // console.log("template", template);
-  //console.log(template.ast);
-
   //////////////////////////// SUITESCRIPT LIBRARY
   const SS = {
     Form: {
@@ -27,6 +23,7 @@ function createPlugin(babel) {
           title: null,
           module: null,
           fileId: null,
+          ui: null,
         },
         methods: {
           module: (props) =>
@@ -350,6 +347,8 @@ function createPlugin(babel) {
       `ERR: the jsx component: ${compType}, is NOT included in the ss library. Refer to docs to see included components`,
   };
 
+  // WHY: handles getting the props, children and parents of the node
+  // then populating the component object with the values we need to get our SuiteScript calls
   function handleNode(path) {
     console.log("createCompObj NODE BEFORE:", path.node);
     // Initial Setup:
@@ -357,8 +356,10 @@ function createPlugin(babel) {
     path.node.children = path.node.children.filter(
       (child) => child.type !== "JSXText"
     );
-    console.log(path.node.children);
+    console.log("CHILDREN:", path.node.children);
+    // child check:
     hasValidChildren(path.node.children, path.node.compType, path);
+
     // Arguments get passed into the methods:
     path.node.props = {
       arguments: {},
@@ -370,7 +371,7 @@ function createPlugin(babel) {
       path.node.openingElement.attributes,
       path
     );
-    console.log("props:", props);
+    console.log("props HANDLE NODE:", props);
     // PARENT, only if JSXElement
     let parentPath = path.findParent((path) => path.isJSXElement()) || null;
     console.log("parentPath", parentPath);
@@ -381,28 +382,15 @@ function createPlugin(babel) {
     } else {
       /* 
       
-      Trying to access the serverWidget in the use case where our JSSX is WITHIN a onRequest function.
-      
-      
-      ALSO!!! How are we going to handle Tabs since <Tab> would be the parent for <Field> but there is 
+  How are we going to handle Tabs since <Tab> would be the parent for <Field> but there is 
       no Tab.addField().. maybe we create a variant... 
       
       - Firstly, lets look into the SuiteScript code for Tab
       - when sublist is given a tab value, skip
       - If parent is Tab: path.node.props.tab = tabId
       
-      
+  
       */
-
-      let parentPath = path.findParent((path) => path.isFunctionExpression());
-      console.log(parentPath);
-      let funcParent = path.getFunctionParent();
-      console.log("funcParent", funcParent);
-      let ui = funcParent.container
-        .find((el) => el.type === "ArrowFunctionExpression")
-        .params.find((param) => param.name === "serverWidget").name;
-      path.node.parentNode = null;
-      path.node.props.variables.ui = ui;
     }
     // create new instance of component Object from component library:
     let compObj = SS[path.node.compType];
@@ -426,9 +414,7 @@ function createPlugin(babel) {
     return path.node;
   }
 
-  // controls how props are converted into variables/id's
-
-  // what's happening is when we pass in the Parent, we're getting fucky results
+  // WHY: controls how props are converted into variables/id's
   function handleVars(compType, propsObj, path) {
     // console.log("handleVars propsObj:", propsObj);
     //console.log("SS[compType]", SS[compType]);
@@ -538,7 +524,7 @@ function createPlugin(babel) {
       }
     }
     console.log("suiteScriptSyntax:", suiteScriptSyntax);
-    path.stop();
+    //path.stop();
     return suiteScriptSyntax;
   }
 
@@ -562,17 +548,17 @@ function createPlugin(babel) {
   }
 
   function handleProps(compType, propsArr, path) {
-    let propsObj = {}; // new props object per component visit
-    //console.log('comptype:', compType);
-    console.log("propsArr:", propsArr);
+    let propsObj = {}; // new props object to populate / JSXElement visit
     propsArr.forEach((prop) => {
       const propName = prop.name.name;
       const propValNode = prop.value; // won't exist for some Nodes
       const propValExp = prop.value ? prop.value.expression : null; //  won't exist for some Nodes
-      //  console.log("prop", prop);
+      console.log("prop", prop);
       // valid prop of component in component library?
-      //console.log(SS[comp].props.variables.hasOwnProperty(propName));
+      // console.log(SS[compType].props.variables.hasOwnProperty(propName));
+      // console.log(SS[compType].props.methods.hasOwnProperty(propName));
 
+      // if either
       if (
         !SS[compType].props.variables.hasOwnProperty(propName) &&
         !SS[compType].props.methods.hasOwnProperty(propName)
@@ -606,24 +592,30 @@ function createPlugin(babel) {
         propsObj[propName] = propValExp.value;
         return;
       }
+      console.log(propName);
+      // if path has serverWidget binding, get serverWidget
+      if (path.scope.hasBinding("serverWidget")) {
+        propsObj[propName] = "serverWidget";
+        return;
+      }
+
       // Props w. Bindings (IN FUNCTION SCOPE)
-      // Could we use t.isBinding() instead?
       if (
         t.isJSXExpressionContainer(propValNode) &&
         t.isIdentifier(propValExp)
       ) {
         const identifiersObj = path.scope.bindings;
+
         // if the identifier object has props:
         if (Object.keys(identifiersObj).length !== 0) {
           let bindingIdNode = identifiersObj[propValExp.name].path.node;
+          // console.log("bindingIdNode", bindingIdNode);
           propsObj[propName] = bindingIdNode.init.value;
           return;
         }
-        // Props w. Bindings (OUTSIDE FUNCTION SCOPE) how do????????
-        // Could we use t.isBinding() for this?
       }
     });
-    //console.log("handleProps:", propsObj);
+    console.log("handleProps propsObj:", propsObj);
     //console.log("handleVars return: ", handleVars(compType, propsObj, path));
     return handleVars(compType, propsObj, path);
   }
@@ -702,3 +694,9 @@ function createPlugin(babel) {
     },
   };
 }
+
+//  console.log("identifiersObj:", identifiersObj);
+// let funcParent = path.findParent((path) => path.isCallExpression());
+// let callExpArgs = funcParent.node.arguments.find((node) => node.type === "FunctionExpression").params.find((param) => param.name === "serverWidget");
+// console.log("funcParent:", funcParent);
+// console.log("callExpArgs:", callExpArgs);
