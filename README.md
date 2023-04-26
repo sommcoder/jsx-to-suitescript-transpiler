@@ -4,6 +4,13 @@ The ui/serverWidget module requires very verbose syntax to build a UI. The API c
 
 We're not reinventing the wheel, we're just leveraging a well known syntax to make SuiteScript UI's exponentially easier/faster to develop, maintain and read.
 
+# Run using the following command in your terminal:
+
+```
+npm run jssx <fileName>.jsx
+
+```
+
 # Less Code, Quicker UI Development
 
 JSSX dramatically cuts down on dev time and increases code readability expressed as simple JSX, which many developers are famililar with if they've ever used the React.
@@ -32,21 +39,25 @@ would be:
 </Form>
 ```
 
-this:
+... and this:
 
 ```javascript
-const Sublist = Form.addSublist({});
+const Sublist = Form.addSublist({
+  id: "custpage_numbers_sublist",
+  label: "Number Sublist",
+  type: "editor",
+});
 Sublist.addButton({
   id: "custpage_enter_button",
-  label: "",
+  label: "Enter Button",
 });
 ```
 
 would be:
 
 ```javascript
-<Sublist>
-  <Button />
+<Sublist type="editor" label="Number Sublist">
+  <Button label="Enter Button" />
 </Sublist>
 ```
 
@@ -272,3 +283,7 @@ Would be transpiled to this:
           text: "false",
       });
 ```
+
+# JSSX is only for Forms.
+
+# Version 2.0 to include List and Assistant compatibility

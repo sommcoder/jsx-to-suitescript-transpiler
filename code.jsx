@@ -9,11 +9,7 @@ define(["N/ui/serverWidget", "N/search"], function (serverWidget, search) {
       // bindings inside scope:
       const fileId = "654321";
       const def = 123;
-      const clear = () => {};
-
-      // we can only utilize bindings within the function scope unfortunately...
-      //
-
+      const clr = () => {};
       return (
         <Form title="Customer" fileId={fileId}>
           <Tab label="Customer Number">
@@ -30,7 +26,7 @@ define(["N/ui/serverWidget", "N/search"], function (serverWidget, search) {
               <Field label="Customer" type="text" />
             </Sublist>
           </Tab>
-          <Button fn={clear} />
+          <Button label="Clear Button" fn={clr} />
         </Form>
       );
     }
