@@ -1,6 +1,6 @@
 {
   "name": "jsx-to-ss",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "transpiles JSX syntax into NetSuite-readable SuiteScript 2.0 API calls",
   "main": "index.js",
   "scripts": {
