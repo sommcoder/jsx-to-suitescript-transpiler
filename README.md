@@ -126,7 +126,7 @@ suiteletSublist.addField({
 });
 ```
 
-CAN BE EXPRESSED CONDENSED AND READABLE LIKE THIS:
+CAN BE EXPRESSED IN A CONDENSED AND READABLE FASHION LIKE THIS:
 
 ```javascript
 <Form title="Customer Form">
