@@ -271,10 +271,19 @@ reminder:
 - containers are inferred through nesting, ie. The parent is the Object that the child is called on
 - functions are called on their parents.
   example: If you nest a Field in a Sublist, the call generated will be: Sublist.addField() but if you nest a Field in a Form, the call generated will be: Form.addField()
+- How to express types/values of props in JSX:
+
+  | type      | syntax ex.                       |
+  | --------- | -------------------------------- |
+  | string:   | label=""                         |
+  | number:   | label={123}                      |
+  | object:   | label={{prop1: 123, prop2: 123}} |
+  | variable: | label={var}                      |
+  | array:    | label={[]}                       |
 
 Here is a table of available **supported** SuiteScript components and their respective props.
 
-| Comp.      | API Call (transpiles to)     | Prop / keyword                 | JSSX translation ex.                    |     |
+| Comp.      | API Call (transpiles to)     | Prop: type                     | JSSX translation ex.                    |     |
 | ---------- | ---------------------------- | ------------------------------ | --------------------------------------- | --- |
 | Form       | serverWidget.createForm      | title: string                  | `<Form title="" />`                     | \*  |
 |            |                              | navBar: string                 | `<Form navBar />`                       |     |
