@@ -283,7 +283,7 @@ Here is a table of available **supported** SuiteScript components and their resp
 | Tab        | Form.addTab                  | label: string                  | `<Tab label="" />`                      | \*  |
 |            | Tab.helpText                 | helpText: string               | `<Tab help="" />`                       |     |
 |            |                              |                                |                                         |     |
-| FieldGroup | Form.addFieldGroup           | label: string                  | `<Tab label="" />`                      | \*  |
+| FieldGroup | Form.addFieldGroup           | label: string                  | `<FieldGroup label="" />`               | \*  |
 |            |                              |                                |                                         |     |
 | Sublist    | Form.AddSublist              | label: string                  | `<Sublist label="" />`                  | \*  |
 |            |                              | type: string                   | `<Sublist type="" />`                   | \*  |
@@ -318,6 +318,8 @@ Here is a table of available **supported** SuiteScript components and their resp
 
 \* required props in your JSSX component!
 
+**JSSX has currently only been created and tested on Suitelet Forms.**
+
 # Run using the following command in your terminal:
 
 ```
@@ -329,9 +331,8 @@ npm run jssx <fileName>.jsx
 2. Create a .jsx file in your current directory.
 3. Create your JSSX page UI in the .jsx file and ///// below it to separate the JSX from the Javascript that will be written to the file
 4. Ensure you are in the correct directory
-5. Run the above command
-6. node.js will return the output code as a string in your
-
-# JSSX has currently only been tested on Forms.
+5. Run the above npm command
+6. Node.js will return the output code as a string below your jssx in your .jsx file
+7. To edit, change your jssx as needed, delete the SuiteScript below, and run the command again!
 
 # Version 2.0 to include List and Assistant compatibility
