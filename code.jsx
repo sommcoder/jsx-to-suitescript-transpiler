@@ -1,132 +1,120 @@
-// const select = [
-//   { text: "Brian Davies", value: 123 },
-//   { text: "Jeff Jefferson", value: 432 },
-//   { text: "Smith Smithson", value: 567 },
-//   { text: "James Jameson", value: 987 },
-//   { text: "Sarah Saronson", value: 934 },
-// ];
+// search props/bindings:
+const filters = [
+  ["item", "anyof", sublistItems],
+  "AND",
+  ["mainline", "is", "F"],
+];
+const settings = [
+  {
+    name: "consolidationtype",
+    value: "AVERAGE",
+  },
+];
+const columns = ["entity", "subsidiary", "name", "currency"];
 
-// {
-//   select.map(({ text, value }) => (
-//     <Select text={text} value={value} selected />
-//   ));
-// }
+// if we do this technique, it's almost redundant to specify columns when the column that we need will be specified in the value prop of the respective component that we wish to populate that column value on
 
-const s = { h: 40, w: 30 };
-const p = 15;
+// because column EQUALS
+
+// label and column name won't necessarily be same/similar. the column name is based on Records, whereas the label will be whatever is best for te user/client
+const fieldArr = [
+  {
+    label: "Entity",
+    type: "text",
+    value: "",
+  },
+  {
+    label: "Subsidiary",
+    type: "text",
+    value: "",
+  },
+  {
+    label: "Name",
+    type: "text",
+    value: "",
+  },
+  {
+    label: "Currency",
+    type: "number",
+    value: "currency",
+  },
+];
+//////////////////////////////////////////////////////
+/*
+ 
+The search functionality here is basic because compared to a callback function, there are limitations on what we can and cannot express with just JSX syntax.
+
+We do however have the ability to cut down on verbosity and produce simple search functionality in extremely simple syntax that is highly readable BUT we'll just never be able to express anything THAT complex within the Search component
+
+
+1) we haven't even tested basic syntax with arr.map() for jsx
+ 
+*/
+
+//////////////
 
 <Form title="Customer Form" fileId="654321">
   <Tab label="Customer Information">
-    <Field
-      secret
-      label="Items Purchased"
-      type="text"
-      size={s}
-      padding={p}
-      restScriptIds="Brian"
-    />
     <Sublist markAll label="item history">
-      <Field label="SO" type="text" size={s} padding={p} />
-      <Field label="Total Spend" type="text" size={s} padding={p} />
-      <Field label="Date Added" type="text" size={s} padding={p} />
-      <Field label="Customer" type="text" size={s} padding={p}>
-        <Select text="Brian Davies" value={123} />
-        <Select text="Jeff Jefferson" value={432} />
-        <Select text="Smith Smithson" value={567} />
-        <Select text="James Jameson" value={987} />
-        <Select text="Sarah Saronson" value={934} />
-      </Field>
+      <Search
+        type="sales order"
+        columns={columns}
+        filters={filters}
+        settings={settings}
+      >
+        {fieldArr.map(({ l, t, v }) => (
+          <Field label={l} type={t} value={v} />
+        ))}
+      </Search>
     </Sublist>
   </Tab>
   <Button label="Clear Button" />
 </Form>;
 
-/////////////////////////////////////////
+{
+  /* <Form title="Customer Form" fileId="654321">
+  <Tab label="Customer Information">
+    <Sublist markAll label="item history">
+      <Search
+        type="sales order"
+        columns={columns}
+        filters={filters}
+        settings={settings}
+      >
+        {fieldArr.map(({ l, t, v }) => (
+          <Field label={l} type={t} value={v} />
+        ))}
+      </Search>
+    </Sublist>
+  </Tab>
+  <Button label="Clear Button" />
+</Form>; */
+}
 
-const customerForm = serverWidget.createForm({
-   title: 'Customer Form',
-});
-customerForm.addTab({
-   id: 'custpage_customer_information_tab',
-    label: 'Customer Information',
-});
-const itemsPurchasedField = customerForm.addSecretKeyField({
-   id: 'custpage_items_purchased_field',
-    label: 'Items Purchased',
-    
-   
-   container: 'custpage_customer_information_tab',
-});
-const itemHistorySublist = customerForm.addSublist({
-    id: 'custpage_item_history_sublist',
-    label: 'item history',
-    tab: 'custpage_customer_information_tab'
-});
-itemHistorySublist.addMarkAllButtons();
-const soField = itemHistorySublist.addField({
-    id: 'custpage_so_field',
-   label: 'SO',
-    type: 'text',
-});
-soField.updateDisplaySize({
-   height: 40,
-    width: 30,
-  });
-soField.padding = undefined
-const totalSpendField = itemHistorySublist.addField({
-    id: 'custpage_total_spend_field',
-   label: 'Total Spend',
-    type: 'text',
-});
-totalSpendField.updateDisplaySize({
-   height: 40,
-    width: 30,
-  });
-totalSpendField.padding = undefined
-const dateAddedField = itemHistorySublist.addField({
-    id: 'custpage_date_added_field',
-   label: 'Date Added',
-    type: 'text',
-});
-dateAddedField.updateDisplaySize({
-   height: 40,
-    width: 30,
-  });
-dateAddedField.padding = undefined
-const customerField = itemHistorySublist.addField({
-    id: 'custpage_customer_field',
-   label: 'Customer',
-    type: 'text',
-});
-customerField.updateDisplaySize({
-   height: 40,
-    width: 30,
-  });
-customerField.padding = undefined
-customerField.addSelectOption({
-    value : '123',
-   text : 'Brian Davies',
-});
-customerField.addSelectOption({
-    value : '432',
-   text : 'Jeff Jefferson',
-});
-customerField.addSelectOption({
-    value : '567',
-   text : 'Smith Smithson',
-});
-customerField.addSelectOption({
-    value : '987',
-   text : 'James Jameson',
-});
-customerField.addSelectOption({
-    value : '934',
-   text : 'Sarah Saronson',
-});
-const clearButton = customerForm.addButton({
-   id: 'custpage_clear_button',
-   label: 'Clear Button',
-});
-context.response.writePage({
-    pageObject: 'customerForm'
-});
+//  <Field label="Entity" type="text" value={{ name: "" }} />
+//       <Field label="Subsidiary" type="text" value={{ name: "" }} />
+//       <Field label="Name" type="text" value={{ name: "" }} />
+//       <Field label="Currency" type="text" value={{ name: "" }} />
+
+{
+  /* <Form title="Customer Form" fileId="654321">
+  <Tab label="Customer Information">
+    <Field label="Items Purchased" type="text" />
+    <Sublist markAll label="item history">
+      <Field label="SO" type="text" />
+      <Field label="Total Spend" type="text" />
+      <Field label="Date Added" type="text" />
+      <Field label="Customer" type="text">
+        <Select text="Brian Davies" value={123} />
+        <Select text="Jeff Jefferson" value={432} />
+        <Select text="Smith Smithson" value={567} />
+        <Select text="James Jameson" value={987} />
+        <Select text="Sarah Sarahson" value={934} />
+      </Field>
+    </Sublist>
+  </Tab>
+  <Button label="Clear Button" />
+</Form>; */
+}
+
+/////////////////////////////////////////

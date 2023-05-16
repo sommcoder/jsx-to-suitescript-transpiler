@@ -1,20 +1,34 @@
 # "JSSX" - JSX to SuiteScript Transpiler & Dev Tool using Babel
 
-In SuiteScript development the 'ui/serverWidget' module used to create Suitelet scripts requires very verbose syntax in order to build a UI. Each component has it's own function call on the parent object that calls it with an options object that requires certain values in the correct format or the code fails.
+In SuiteScript development the 'ui/serverWidget' module used to create Suitelet scripts requires rather verbose syntax in order to build a UI. Each component has it's own function call on the parent object that calls it with an options object that requires certain values in the correct format or the code fails.
 
-These functions are verbose, requiring 100+ lines of code to build even a simple sublist on a form with only a few fields.
+These functions all together can require 100+ lines of code to build even a simple sublist on a form with only a few fields and buttons. On top of that, the extensive scrolling needed to read the code for the UI makes updates more difficult than it ought to be for modern web development.
 
-Using the much more readible JSX syntax from the React library this library transpilers JSX into SuiteScript API calls while also providing a preprocessing layer to test UI development before deployment/testing on the NetSuite platform.
+Using the much more readable JSX syntax from the React library, "JSSX" transpilers JSX into SuiteScript API calls while also providing a preprocessing layer to test UI development before deployment/testing on the actual NetSuite platform.
 
-This isn't reinventing the wheel, it just leverages a well known syntax to make SuiteScript UI's exponentially easier/faster to develop, maintain and read.
+We are essentially converting Suitelet UI representation from being spaghetti code API calls to being represented hierarchically as modern component-based UI architecture as seen in modern JavaScript frameworks.
 
-# How does it all work?
+We're not reinventing the wheel, we're just leveraging a common syntax to make SuiteScript UI's exponentially easier/faster to develop, maintain and read.
 
-# Nesting Infers The Component's Relationships
+# What is JSX?
 
-Page components wrap valid child components within them like regular HTML/XML element nesting. This nesting infers the component's relationship. Once transpiled, auto-generated variables are used to connect child components to their parents components.
+[Official JSX docs](https://facebook.github.io/jsx/)
 
-this:
+But it's simpler with JSSX. There is no JavaScript needed. The Babel compiler will be able to parse JSX Elements all on their own. No need to have the JSX be the return of a greater UI component like in React development.
+
+Just simply add the tags, props and nesting as needed to build your UI. Run the transpile command with the .jsx file that you're transpiling and JSSX will append your SuiteScript below your JSSX. Copy and paste this SuiteScript into your project and voila!
+
+# Nesting Infers The Component's Relationship to each other
+
+Page components and valid parent components wrap valid child components within them like regular HTML/XML element nesting.
+
+This nesting is what infers the component's relationship. Each component will be given properties or "props", which syntactically look like HTML/XML attributes.
+
+Once transpiled, auto-generated variables are used to connect child components to their parents components. Since this is JavaScript, the variables are in camelCase.
+
+It works just like SuiteScript, create a Form object from the ui.createForm() call and from that returned object you can call Form.addField() for example.
+
+The SuiteScript for this looks like:
 
 ```javascript
 const Form = ui.createForm({
@@ -26,7 +40,7 @@ Form.addField({
 });
 ```
 
-would be:
+but in "JSSX" would represented as this:
 
 ```javascript
 <Form title="Distribution Form">
@@ -34,29 +48,7 @@ would be:
 </Form>
 ```
 
-... and this:
-
-```javascript
-const Sublist = Form.addSublist({
-  id: "custpage_numbers_sublist",
-  label: "Number Sublist",
-  type: "editor",
-});
-Sublist.addButton({
-  id: "custpage_enter_button",
-  label: "Enter Button",
-});
-```
-
-would be this:
-
-```javascript
-<Sublist type="editor" label="Number Sublist">
-  <Button label="Enter Button" />
-</Sublist>
-```
-
-id's are not necessary to include as they are automatically generated using this library!
+NOTE: id's are not necessary to include as properties as they are automatically generated using this library!
 
 # Reduces Verbosity
 
@@ -208,7 +200,7 @@ You'll get instance feedback once you enter the run command in your terminal.
 1. Always start with a page Component (Form, List, Assistant) just like with regular suitelet ui development
 2. Components are wrapped in angle brackets just like HTML/XML.
 3. Use PascalCase for components just like JSX
-4. Select is a madeup component in JSSX. It is syntactic sugar for adding select options to a Field component and so Select is expressed as the child of Field
+4. Select is a made-up component in JSSX. It is syntactic sugar for adding select options to a Field component and so Select is expressed as the child of Field
 5. If you would have a component reference another component in its options Object, you simply express this by wrapping that component with it's parent
 6. If you want to add a field to a Sublist, wrap the field in a sublist as its parent. If you want to add a field to the form the Field can be wrapped by a Tab or FieldGroup because in this instance the Field is added to the Page regardless.
 7. Every component MUST have properties (or "props") and they can never be duplicates or JSSX will throw an error
@@ -259,11 +251,11 @@ const t = "text";
 </Form>;
 ```
 
-as you can see above, variables/bindings can be created to reduce character repitition.
+as you can see above, variables/bindings can be created to reduce character repetition.
 
 # Components & Props
 
-To reduce verbosity some of the API calls have been shortened to allow for better readability as JSX and id and container properties have been made reduntant:
+To reduce verbosity some of the API calls have been shortened to allow for better readability as JSX and id and container properties have been made redundant:
 
 reminder:
 
@@ -341,7 +333,7 @@ npm run jssx <fileName>.jsx
 3. Create your JSSX page UI in the .jsx file and ///// below it to separate the JSX from the Javascript that will be written to the file
 4. Ensure you are in the correct directory
 5. Run the above npm command
-6. Node.js will return the output code as a string below your jssx in your .jsx file
-7. To edit, change your jssx as needed, delete the SuiteScript below, and run the command again!
+6. Node.js will return the output code as a string below your JSSX in your .jsx file
+7. To edit, change your JSSX as needed, delete the SuiteScript below, and run the command again!
 
 # Version 2.0 to include List and Assistant compatibility
