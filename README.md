@@ -336,4 +336,48 @@ npm run jssx <fileName>.jsx
 6. Node.js will return the output code as a string below your JSSX in your .jsx file
 7. To edit, change your JSSX as needed, delete the SuiteScript below, and run the command again!
 
+# SAVED SEARCH USE CASE:
+
+Creating a UI for a Suitelet is nice but ONLY that isn't useful in many situations because you often want the fields to be populated dynamically using something like a saved search in NetSuite.
+
+Enter the the search() function. Search can allow us to populate our Field and declare them simultaneously if we call .map() on its return within a JSX JavaScript expression block. Or we can populate our components independently of their creation.
+
+This is how we populate as we declare/create components
+
+```javascript
+<Form title="Customer Form" fileId="654321">
+  <Tab label="Customer Information">
+    <Sublist markAll label="item history">
+      {search(fieldsArr, filters, settings).map(({ l, t, c }) => (
+        <Field label={l} type={t} column={c} />
+      ))}
+    </Sublist>
+  </Tab>
+  <Button label="Clear Button" />
+</Form>
+```
+
+This is how we populate independently of our declaration by wrapping the components you wish to populate with a Search tag
+
+```javascript
+<Form title="Customer Form" fileId="654321">
+  <Tab label="Customer Information">
+    <Sublist markAll label="item history">
+      <Search columns={columns} filters={filters} settings={settings}>
+        <Field label="Items Purchased" type="text" column="item" />
+        <Field label="SO" type="text" column="item" />
+        <Field label="Total Spend" type="text" column="item" />
+        <Field label="Date Added" type="text" column="item" />
+        <Field label="Customer" type="text" column="item" />
+      </Search>
+    </Sublist>
+  </Tab>
+  <Button label="Clear Button" />
+</Form>
+```
+
+NOTE: the columns are imperatively coded here as a prop. This allows for more direct control
+
+Ultimately, this is where the limitations of "JSSX" start to show since during runtime the components are created as they are shown in JSSX however populating them can
+
 # Version 2.0 to include List and Assistant compatibility

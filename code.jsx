@@ -10,36 +10,97 @@ const settings = [
     value: "AVERAGE",
   },
 ];
-const columns = ["entity", "subsidiary", "name", "currency"];
+// const columns = ["entity", "subsidiary", "name", "currency"];
+
+// columns is optional, as the dev could set up the Fields in the order they want, and value would get pushed to the columnsArr for SuiteScript calls, but is technically not needed here
+
+// if you want a result.getValue() called on it, use the value prop, if you want result.getText(), use text prop.
+// there CANNOT be both or multiple on the same component
+// they all get populated and
+
+const fieldsArr = [
+  {
+    label: "Entity",
+    type: "text",
+    column: "",
+  },
+  {
+    label: "Subsidiary",
+    type: "text",
+    column: "",
+  },
+  {
+    label: "Name",
+    type: "text",
+    column: "",
+  },
+  {
+    label: "Currency",
+    type: "number",
+    column: "",
+  },
+];
+
+// function search(fieldsArr, filters, settings) {
+//   let array = [];
+
+//   path.node;
+//   /*
+//   - filters and settings will just get added to the searchSyntax string
+//   - but fieldsArr is what gets returned and iterated over
+//   */
+
+//   return fieldsArr;
+// }
+
+//////////////
+// is this too narrow of a solution????
+// what if the dev DOESN'T want to
+
+<Form title="Customer Form" fileId="654321">
+  <Tab label="Customer Information">
+    <Sublist markAll label="item history">
+      {search(fieldsArr, filters, settings).map(({ col, lab, typ }, i) => {
+        <Field label={lab} type={typ} column={col} />;
+      })}
+    </Sublist>
+  </Tab>
+  <Button label="Clear Button" />
+</Form>;
+
+/* 
+        .map() is basically our .each() callback function, since map will iterated through each result in the ResultSet.
+
+        we will also have access to the iteration variable inside .map() so that'll allow us to express plenty of logic here
+        
+        Could we just make value and text === column={}
+        and then whether or not it is a .getValue() or .getText() would be inferred by the components type???
+
+        The return just needs to be the components and.
+        */
+
+{
+  /* <Form title="Customer Form" fileId="654321">
+  <Tab label="Customer Information">
+    <Sublist markAll label="item history">
+      <Search type="sales order" filters={filters} settings={settings}>
+        {fieldArr.map(({ l, t, v }) => (
+          <Field label={l} type={t} value={v} />
+        ))}
+      </Search>
+    </Sublist>
+  </Tab>
+  <Button label="Clear Button" />
+</Form>; */
+}
+
+//////////////////////////////////////////////////////
 
 // if we do this technique, it's almost redundant to specify columns when the column that we need will be specified in the value prop of the respective component that we wish to populate that column value on
 
 // because column EQUALS
 
 // label and column name won't necessarily be same/similar. the column name is based on Records, whereas the label will be whatever is best for te user/client
-const fieldArr = [
-  {
-    label: "Entity",
-    type: "text",
-    value: "",
-  },
-  {
-    label: "Subsidiary",
-    type: "text",
-    value: "",
-  },
-  {
-    label: "Name",
-    type: "text",
-    value: "",
-  },
-  {
-    label: "Currency",
-    type: "number",
-    value: "currency",
-  },
-];
-//////////////////////////////////////////////////////
 /*
  
 The search functionality here is basic because compared to a callback function, there are limitations on what we can and cannot express with just JSX syntax.
@@ -50,71 +111,3 @@ We do however have the ability to cut down on verbosity and produce simple searc
 1) we haven't even tested basic syntax with arr.map() for jsx
  
 */
-
-//////////////
-
-<Form title="Customer Form" fileId="654321">
-  <Tab label="Customer Information">
-    <Sublist markAll label="item history">
-      <Search
-        type="sales order"
-        columns={columns}
-        filters={filters}
-        settings={settings}
-      >
-        {fieldArr.map(({ l, t, v }) => (
-          <Field label={l} type={t} value={v} />
-        ))}
-      </Search>
-    </Sublist>
-  </Tab>
-  <Button label="Clear Button" />
-</Form>;
-
-{
-  /* <Form title="Customer Form" fileId="654321">
-  <Tab label="Customer Information">
-    <Sublist markAll label="item history">
-      <Search
-        type="sales order"
-        columns={columns}
-        filters={filters}
-        settings={settings}
-      >
-        {fieldArr.map(({ l, t, v }) => (
-          <Field label={l} type={t} value={v} />
-        ))}
-      </Search>
-    </Sublist>
-  </Tab>
-  <Button label="Clear Button" />
-</Form>; */
-}
-
-//  <Field label="Entity" type="text" value={{ name: "" }} />
-//       <Field label="Subsidiary" type="text" value={{ name: "" }} />
-//       <Field label="Name" type="text" value={{ name: "" }} />
-//       <Field label="Currency" type="text" value={{ name: "" }} />
-
-{
-  /* <Form title="Customer Form" fileId="654321">
-  <Tab label="Customer Information">
-    <Field label="Items Purchased" type="text" />
-    <Sublist markAll label="item history">
-      <Field label="SO" type="text" />
-      <Field label="Total Spend" type="text" />
-      <Field label="Date Added" type="text" />
-      <Field label="Customer" type="text">
-        <Select text="Brian Davies" value={123} />
-        <Select text="Jeff Jefferson" value={432} />
-        <Select text="Smith Smithson" value={567} />
-        <Select text="James Jameson" value={987} />
-        <Select text="Sarah Sarahson" value={934} />
-      </Field>
-    </Sublist>
-  </Tab>
-  <Button label="Clear Button" />
-</Form>; */
-}
-
-/////////////////////////////////////////
