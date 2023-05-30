@@ -312,6 +312,13 @@ Here is a table of **supported** SuiteScript components and their respective pro
 | Select     | Field.addSelectOptions       | text: string                   | `<Select text="" value=""/> `           | \*  |
 |            |                              | value: str or num              | `<Select value=""/> `                   | \*  |
 |            |                              |                                |                                         |     |
+| Search     | search.create()              | type: string                   | `<Select text="" value=""/> `           | \*  |
+|            |                              | title: string                  | `<Select value=""/> `                   |     |
+|            |                              | settings: object               |                                         |     |
+|            |                              | filters: object                |                                         |     |
+|            |                              | tit                            |                                         |     |
+|            |                              |                                |                                         |     |
+|            |                              |                                |                                         |     |
 
 \* required props in your JSSX component!
 
@@ -364,10 +371,11 @@ Here is an example of what this would look like:
 <Form title="Customer Form" fileId="654321">
   <Tab label="Customer Information">
     <Sublist markAll label="item history">
-      {search(fieldArr, settings, filters).map(({ label, type, col }) => (
-        // logic could be added here to handle components
+      {search(fieldArr, settings, filters).map(({ l, t, c }) => (
+        // logic would be added here to handle components
         // each element of the array created a new Field component
-        <Field label={label} type={type} column={col} />
+        // this would act like the N/search module's ResultSet.run().each() callback function
+        <Field label={l} type={t} column={c} />
       ))}
     </Sublist>
   </Tab>

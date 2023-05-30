@@ -23,3 +23,7 @@ const settings = [
   </Tab>
   <Button label="Clear Button" />
 </Form>;
+
+context.response.writePage({
+    pageObject: ''
+});
