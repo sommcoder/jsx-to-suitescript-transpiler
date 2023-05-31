@@ -2,12 +2,20 @@ exports.default = createPlugin;
 
 function createPlugin(babel) {
   const { types: t } = babel;
+
+  //////////////////////////// UTIL FUNCTIONS:
+  const UTIL = {
+    checkProps: (reqPropsArr, props) => {
+      reqPropsArr.forEach((prop) => {
+        if (!Object.keys(props).includes(prop)) {
+          throw new Error(ERROR.missingRequiredProp(props.type, prop));
+        }
+      });
+    },
+  };
   //////////////////////////// SUITESCRIPT LIBRARY
+
   const SS = {
-    // The challenge here is that Search, Filters and Settings are their own components however need to be concatenated after processing them individually.
-
-    // We need a way of distinguishing these components as something else entirely and have a guard in place to ensure they are processed differently.
-
     Search: {
       attributes: {
         isPage: false,
@@ -15,6 +23,7 @@ function createPlugin(babel) {
         canBeSearched: false,
         possibleChildren: ["Field", "Select"],
         possibleParents: ["Sublist"],
+        possibleVariants: ["Field", "Select"],
       },
       props: {
         variables: {
@@ -289,6 +298,7 @@ function createPlugin(babel) {
       },
       props: {
         variables: {
+          column: null,
           label: null,
           type: null,
           id: null,
@@ -397,6 +407,7 @@ function createPlugin(babel) {
       },
       props: {
         variables: {
+          column: null,
           isSelected: false,
           value: null,
           text: null,
@@ -536,8 +547,14 @@ function createPlugin(babel) {
     let compObj = SS[path.node.compType];
     assignProps(compObj, path);
 
-    // PARENT: only if JSXElement
     let parentPath = path.findParent((path) => path.isJSXElement()) || null;
+    console.log("BEFORE parentPath", parentPath);
+    // PARENT: only if JSXElement
+    if (parentPath && parentPath.node.compType === "Search") {
+      // re-assign to searches parent:
+      parentPath = parentPath.findParent((path) => path.isJSXElement()) || null;
+      console.log("AFTER parentPath", parentPath);
+    }
     if (parentPath) validateParent(parentPath, compObj, path);
 
     return path.node;
@@ -648,8 +665,14 @@ function createPlugin(babel) {
         */
   }
 
-  function createSearch(search) {
-    console.log("search", search);
+  function createSearch(searchNode) {
+    console.log("searchNode", searchNode);
+    let fieldCheck = searchNode.children.find(
+      (child) => child.compType === "Field"
+    );
+
+    if (!fieldCheck) searchNode.props.arguments.variant = "Field";
+    else searchNode.props.arguments.variant = "Select";
   }
 
   function handleProps(compType, propsArr, path) {
@@ -797,35 +820,40 @@ function createPlugin(babel) {
   /* Gets the SS syntax by passing arguments into methods returning dynamic string literals */
   function getSSComponentCalls(currNode) {
     // PAGE COMPONENT:
-    // console.log("currNode:", currNode);
-
-    if (SS[currNode.compType].attributes.isPage) {
-      suiteScriptSyntax = `\n${SS[currNode.compType].add(
-        currNode.props.arguments
-      )}`;
-    } else {
-      // COMPONENT VARIANTS:
-      if (currNode.variant) {
-        suiteScriptSyntax += `\n${SS[currNode.compType].props.methods[
-          currNode.variant
-        ](currNode.props.arguments)}`;
-      } else {
-        // NON PAGE COMPONENT:
-        suiteScriptSyntax += `\n${SS[currNode.compType].add(
+    if (currNode.compType === "Search") {
+      console.log("SEARCH", currNode);
+      createSearch(currNode);
+    }
+    if (currNode.compType !== "Search") {
+      if (SS[currNode.compType].attributes.isPage) {
+        suiteScriptSyntax = `\n${SS[currNode.compType].add(
           currNode.props.arguments
         )}`;
-        // HANDLE OTHER SS METHOD/PROPERTY CALLS:
-        if (Object.keys(currNode.props.methods).length > 0) {
-          for (let [key, value] of Object.entries(currNode.props.methods)) {
-            console.log("key:", key, "value:", value);
-            suiteScriptSyntax += `\n${SS[currNode.compType].props.methods[key](
-              currNode.props.arguments,
-              value
-            )}`;
+      } else {
+        // COMPONENT VARIANTS:
+        if (currNode.variant) {
+          suiteScriptSyntax += `\n${SS[currNode.compType].props.methods[
+            currNode.variant
+          ](currNode.props.arguments)}`;
+        } else {
+          // NON PAGE COMPONENT:
+          suiteScriptSyntax += `\n${SS[currNode.compType].add(
+            currNode.props.arguments
+          )}`;
+          // HANDLE OTHER SS METHOD/PROPERTY CALLS:
+          if (Object.keys(currNode.props.methods).length > 0) {
+            for (let [key, value] of Object.entries(currNode.props.methods)) {
+              // console.log("key:", key, "value:", value);
+              suiteScriptSyntax += `\n${SS[currNode.compType].props.methods[
+                key
+              ](currNode.props.arguments, value)}`;
+            }
           }
         }
       }
-    }
+      // if component is Search:
+    } else searchSyntax = createSearch(currNode);
+
     //console.log("suiteScriptSyntax:", suiteScriptSyntax);
     return suiteScriptSyntax;
   }
