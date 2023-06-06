@@ -4,17 +4,39 @@
 
 JSSX transpiles Suitelet UI calls into hierarchical, modern, component-based UI architecture as seen in popular JavaScript frameworks like React.
 
-# What is JSX?
+A Suitelet UI could be expressed in condensed, hierarchical syntax like this with JSSX:
+
+```javascript
+<Form title="Customer Form" fileId="654321">
+  <Sublist markAll label="item history">
+    <Field label="Entity" type="text" />
+    <Field label="Subsidiary" type="text" />
+    <Field label="Name" type="text" />
+    <Field label="Currency" type="number" />
+  </Sublist>
+  <Button label="Clear Button" />
+</Form>
+```
+
+If you already know JSX, much of this dev tool is intuitive. Most of the SuiteScript properties should be written the same as you're used to. Skip ahead to the table at the bottom of this README for which components and properties are compatible in this package.
+
+Create your Suitelet UI in a .jsx file in your project directory and run to transpile into SuiteScript!
+
+# run:
+
+```javascript
+jssx <fileName>.jsx
+```
+
+# so, what is JSX?
 
 [Official JSX docs](https://facebook.github.io/jsx/)
 
 But it's even simpler with "JSSX". The Babel compiler will be able to parse JSX Elements all on their own. No need to have the JSX be the return of a greater UI function component like in React development.
 
-No need to import anything either, just install, write your component tree in a .jsx file and run the jssx command in your terminal!
-
 Once your jssx is compiled and appended to your .jsx file, simply copy and paste this SuiteScript into your project and voila!
 
-# Nesting Infers Each Component's Relationships
+# Nesting Infers Component Relationships
 
 Page components and parent components wrap child components within them like regular HTML/XML element nesting. This nesting is what infers the component's relationship. Each component will be given properties or "props", which syntactically look like HTML/XML attributes.
 
@@ -314,9 +336,9 @@ Here is a table of **supported** SuiteScript components and their respective pro
 |            |                              |                                |                                         |     |
 | Search     | search.create()              | type: string                   | `<Select text="" value=""/> `           | \*  |
 |            |                              | title: string                  | `<Select value=""/> `                   |     |
-|            |                              | settings: object               |                                         |     |
-|            |                              | filters: object                |                                         |     |
-|            |                              | tit                            |                                         |     |
+|            |                              | settings: object               | `<Select settings={settings}/> `        |     |
+|            |                              | filters: object                | `<Select filters={filters}/> `          |     |
+|            |                              |                                |                                         |     |
 |            |                              |                                |                                         |     |
 |            |                              |                                |                                         |     |
 
@@ -341,27 +363,118 @@ npm run jssx <fileName>.jsx
 
 # SAVED SEARCH USE CASE:
 
-Creating a UI for a Suitelet is nice but ONLY creating a UI isn't useful in many situations. Often, we want fields to be populated dynamically using something like a Saved Search in NetSuite.
+Creating a UI for a Suitelet is nice and all but ONLY creating a static UI isn't useful in many situations. Often, we want fields to be populated dynamically using something like a Saved Search in NetSuite.
 
-Enter the the <Search> component. Search can allow us to populate our Fields and declare them simultaneously if we wrap <Field>'s in a <Search> component.
+Enter the the <Search> component. Search can allow us to populate our Fields and declare them simultaneously if we wrap <Field>'s in a <Search> component. Only wrap the components you need to populate, and provide the column prop on the Field that you'd like to populate the search with.
 
 ```javascript
+const filters = [["item", "anyof", "name"], "AND", ["mainline", "is", "F"]];
+const settings = [
+  {
+    name: "consolidationtype",
+    value: "AVERAGE",
+  },
+];
+
 <Form title="Customer Form" fileId="654321">
-  <Tab label="Customer Information">
-    <Sublist markAll label="item history">
-      <Search settings={settings} filters={filters}>
-        <Field label="Entity" type="text" column="name" />
-        <Field label="Subsidiary" type="text" column="subsidiary" />
-        <Field label="Name" type="text" column="name" />
-        <Field label="Currency" type="number" column="currency" />
-      </Search>
-    </Sublist>
-  </Tab>
+  <Sublist markAll label="item history">
+    <Search type="salesorder" settings={settings} filters={filters}>
+      <Field label="Entity" type="text" column="name" />
+      <Field label="Subsidiary" type="text" column="subsidiary" />
+      <Field label="Name" type="text" column="name" />
+      <Field label="Currency" type="number" column="currency" />
+    </Search>
+  </Sublist>
   <Button label="Clear Button" />
-</Form>
+</Form>;
 ```
 
-NOTE: the columns are imperatively coded here as a prop. This allows for more direct control
+NOTE: the columns are imperatively coded here as a prop.
+
+The following will be generated from the above code! (No, the strings provided don't make sense, it's just an example)
+
+```javascript
+const customerForm = serverWidget.createForm({
+  title: "Customer Form",
+});
+customerForm.clientScriptFileId = "654321";
+const itemHistorySublist = customerForm.addSublist({
+  id: "custpage_item_history_sublist",
+  label: "item history",
+});
+itemHistorySublist.addMarkAllButtons();
+const entityField = itemHistorySublist.addField({
+  id: "custpage_entity_field",
+  label: "Entity",
+  type: "text",
+});
+const subsidiaryField = itemHistorySublist.addField({
+  id: "custpage_subsidiary_field",
+  label: "Subsidiary",
+  type: "text",
+});
+const nameField = itemHistorySublist.addField({
+  id: "custpage_name_field",
+  label: "Name",
+  type: "text",
+});
+const currencyField = itemHistorySublist.addField({
+  id: "custpage_currency_field",
+  label: "Currency",
+  type: "number",
+});
+const clearButton = customerForm.addButton({
+  id: "custpage_clear_button",
+  label: "Clear Button",
+});
+
+let i = 0;
+
+search
+  .create({
+    type: "salesorder",
+    filters: [["item", "anyof", "name"], "AND", ["mainline", "is", "F"]],
+    columns: ["name", "subsidiary", "name", "currency"],
+  })
+  .run()
+  .each((result) => {
+    itemHistorySublist.setSublistValue({
+      id: "custpage_entity_field",
+      line: i,
+      value: result.getText({
+        name: "name",
+      }),
+    });
+    itemHistorySublist.setSublistValue({
+      id: "custpage_subsidiary_field",
+      line: i,
+      value: result.getText({
+        name: "subsidiary",
+      }),
+    });
+    itemHistorySublist.setSublistValue({
+      id: "custpage_name_field",
+      line: i,
+      value: result.getText({
+        name: "name",
+      }),
+    });
+    itemHistorySublist.setSublistValue({
+      id: "custpage_currency_field",
+      line: i,
+      value: result.getValue({
+        name: "currency",
+      }),
+    });
+
+    i++;
+
+    return true;
+  });
+context.response.writePage({
+  pageObject: "customerForm",
+});
+```
 
 **Eventually we want to make JSSX compatible with Array.map() inside of a JSX Expression container in order to enhance our ability to express logic and also generate components based on a List like in React.**
 

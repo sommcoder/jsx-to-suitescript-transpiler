@@ -17,6 +17,71 @@ function createPlugin(babel) {
 
   const SS = {
     Search: {
+      add: (search) => {
+        // HANDLE SEARCH CREATE:
+        let searchCompSyntax = `\nlet i = 0;\n\nsearch.create({\n   ${
+          search.props.type ? `type: '${search.props.type}',\n` : ""
+        }   ${
+          search.props.title ? `title: '${search.props.title}',\n` : ""
+        }    ${
+          search.props.filters
+            ? `filters: [\n   ${search.props.filters.map((filter) => {
+                if (Array.isArray(filter)) {
+                  return `[${filter.map((el) => UTIL.isObject(el))}]`;
+                } else return UTIL.isObject(filter);
+              })}\n],\n`
+            : ""
+        }${
+          search.children.length > 0
+            ? `columns: [${search.children.map(
+                (child) => `'${child.props.arguments.column}'`
+              )}],\n`
+            : ""
+        }}).run().each((result) => {\n`;
+
+        // console.log("searchCompSyntax:", searchCompSyntax);
+        // console.log("search.children:", search.children);
+
+        // HANDLE RESULTSET.EACH() TRAVERSAL:
+        // FIELD CHILDREN
+        if (search.children.every((child) => child.compType === "Field")) {
+          search.children.map((child, i, arr) => {
+            //  console.log("child", child.props.arguments);
+            searchCompSyntax += `\n${
+              child.props.arguments.parentVar
+            }.setSublistValue({\n   id: '${
+              child.props.arguments.id
+            }',\n    line: i,\n    value: result.${
+              // if type = result.getText(), else: result.getValue()
+              child.props.arguments.type === "text"
+                ? `getText({\n   name: '${child.props.arguments.column}',\n}),`
+                : `getValue({\n    name: '${child.props.arguments.column}',\n}),`
+            }
+        });`;
+          });
+        } else if (
+          // SELECT CHILDREN
+          search.children.every((child) => child.compType === "Select")
+        ) {
+          search.children.map((child) => {
+            searchCompSyntax += `\n${
+              child.props.arguments.parentVar
+            }.addSelectOptions({\n    ${
+              child.props.arguments.text
+                ? `text: '${child.props.arguments.text}'`
+                : `text: result.getText({\n    name: '${child.props.arguments.column}',`
+            }\n}),\n  ${
+              child.props.arguments.value
+                ? `value: '${child.props.arguments.value}'`
+                : `value: result.getValue({\n    name: '${child.props.arguments.column}',`
+            }\n}),\n});`;
+          });
+        } else
+          throw new Error(
+            "Every child of a Search component needs to either be all Field or all Select components exclusively"
+          );
+        return searchCompSyntax + "\n\ni++\n\nreturn true;\n});"; // close the each() method
+      },
       attributes: {
         isPage: false,
         isSearch: true,
@@ -43,22 +108,11 @@ function createPlugin(babel) {
           fileId: null,
         },
         methods: {
-          add: (props) => {
+          save: (props) => {
             return ``;
           },
           load: (props) => {
             return ``;
-          },
-          getValue: (props) => {
-            return `result.getValue({\n   name: "${props.name}",\n}),`;
-          },
-          getText: (props) => {
-            return `result.getText({\n   name: "${props.name}",\n}),`;
-          },
-          setSublistValue: (props) => {
-            return `
-           ${props.parentVar}.setSublistValue({\n   id: "${props.varName}",\n   line: ${props.line},\n    value: ${props.method}\n});
-          `;
           },
         },
       },
@@ -225,7 +279,7 @@ function createPlugin(babel) {
         possibleParents: ["Form", "Assistant", "List", "Tab"],
       },
       props: {
-        // props are what are encapsulated in each JSSX component tag
+        // props are what are encapsulated in eachJSSX component tag
         variables: {
           possibleTypes: ["inlineeditor", "editor", "list", "staticlist"],
           label: null, // what the user wants to call the component
@@ -527,8 +581,8 @@ function createPlugin(babel) {
     path.node.children = path.node.children.filter(
       (child) => child.type !== "JSXText"
     );
-    console.log("path.node.children:", path.node.children);
-    console.log(path.node);
+    //console.log("path.node.children:", path.node.children);
+    //console.log(path.node);
 
     // only validateChildren() if the child array has elements:
     if (path.node.children.length > 0)
@@ -548,12 +602,15 @@ function createPlugin(babel) {
     assignProps(compObj, path);
 
     let parentPath = path.findParent((path) => path.isJSXElement()) || null;
-    console.log("BEFORE parentPath", parentPath);
+    // console.log("BEFORE parentPath", parentPath);
     // PARENT: only if JSXElement
     if (parentPath && parentPath.node.compType === "Search") {
+      // add this component to searchObj for processing after AST traversal
+      searchObj.children.push(path.node);
+
       // re-assign to searches parent:
       parentPath = parentPath.findParent((path) => path.isJSXElement()) || null;
-      console.log("AFTER parentPath", parentPath);
+      // console.log("AFTER parentPath", parentPath);
     }
     if (parentPath) validateParent(parentPath, compObj, path);
 
@@ -567,6 +624,7 @@ function createPlugin(babel) {
     for (let [key, value] of Object.entries(
       handleProps(path.node.compType, path.node.openingElement.attributes, path)
     )) {
+      // after handling props, we handle how they are to be assigned back into NodePath, factoring for compVariants
       if (
         compObj.attributes.possibleVariants &&
         compObj.attributes.possibleVariants.includes(key)
@@ -577,7 +635,11 @@ function createPlugin(babel) {
       }
       // assign variables to node.arguments:
       if (compObj.props.variables.hasOwnProperty(key))
-        path.node.props.arguments[key] = value;
+        if (path.node.props.arguments.parentType === "Search") {
+          // add prop to searchObj if parent is Search
+          searchObj.props[key] = value;
+        }
+      path.node.props.arguments[key] = value;
       // assign methods to node.methods:
       if (compObj.props.methods.hasOwnProperty(key))
         path.node.props.methods[key] = value;
@@ -585,16 +647,7 @@ function createPlugin(babel) {
   }
 
   function validateChildren(childNamesArr, compType, path) {
-    console.log("childNamesArr[0]:", childNamesArr[0]);
-    // if 1st child is a JSX expressionContainer:
-    if (t.isJSXExpressionContainer(childNamesArr[0])) {
-      console.log("JSX EXPRESSION IS THE CHILD");
-      if (childNamesArr[0].expression.callee.object.callee.name === "search") {
-        console.log("JSX EXPRESSION IS A SEARCH");
-        createSearch(childNamesArr[0]);
-        // start building search syntax
-      } // if not search, check to see if this is just a regular arr.map() JS call
-    } else if (
+    if (
       !childNamesArr.every((child) =>
         SS[compType].attributes.possibleChildren.includes(
           child.openingElement.name.name
@@ -608,11 +661,6 @@ function createPlugin(babel) {
   function validateParent(parentPath, compObj, path) {
     path.node.parentNode = parentPath.node;
     path.node.props.arguments.parentType = path.node.parentNode.compType;
-
-    console.log("path.node.parentNode:", path.node.parentNode);
-
-    // Check to ensure that the currComp can have a parent of parentType
-    console.log("working");
     if (
       !compObj.attributes.possibleParents.includes(
         path.node.props.arguments.parentType
@@ -652,35 +700,50 @@ function createPlugin(babel) {
   function validateType(compObj, compType, typeProp, parentType) {
     compType.toLowerCase();
     compObj.attributes.possibleTypes;
-    /*
-         
-        Check compType against SS library to ensure that:
-        1) compType can have a type of typeProp
-        2) compType can have a type of typeProp WITH it's parentType's type
-
-
-        Components with types:
-        1) Field
-         
-        */
   }
 
-  function createSearch(searchNode) {
-    console.log("searchNode", searchNode);
-    let fieldCheck = searchNode.children.find(
-      (child) => child.compType === "Field"
-    );
+  //recurseArray(el.elements, propsObj, propName, path)
+  function handleArrayBinding(array, propsObj, propName) {
+    // console.log("arr TRAVERSE", array);
+    // propsObj[propName].push(arr.map((el) => [])); // push the number of elements to array;
 
-    if (!fieldCheck) searchNode.props.arguments.variant = "Field";
-    else searchNode.props.arguments.variant = "Select";
+    array.forEach((el, i) => {
+      // console.log("i:", i, "el:", el);
+      if (t.isObjectExpression(el)) {
+        //  console.log("is object expression");
+        propsObj[propName].push({}); // add an object to the propsObj array
+        el.properties.forEach((prop) => {
+          // what if prop has a value of a binding?
+          if (t.isIdentifier(prop)) {
+            // console.log(" is identifier");
+            // console.log("prop", prop);
+            propsObj[propName].push({ identifier: el.name });
+          }
+          propsObj[propName][i][prop.key.name] = prop.value.value;
+        });
+      } else if (t.isArrayExpression(el)) {
+        // array? push a new array to array and recursively call function again
+        //  console.log("is array expression");
+        //   console.log(el);
+        propsObj[propName].push([
+          ...el.elements.map((e) => {
+            if (t.isIdentifier(e)) return { identifier: e.name };
+            else return e.value;
+          }),
+        ]);
+      } else if (t.isIdentifier(el)) {
+        // console.log("identifier");
+        propsObj[propName].push({ identifier: el.name });
+      } else if (el) {
+        // not array or Object? simply push value (ie. string/number literals)
+        propsObj[propName].push(el.value);
+      }
+    });
   }
 
   function handleProps(compType, propsArr, path) {
     // props need to be handled depending on their type, binding and whether they're wrapped in a JSX Expression and the combinations thereof
     let propsObj = {};
-    console.log("working here!");
-
-    console.log(propsArr);
 
     propsArr.forEach((prop) => {
       // attributes of a prop:
@@ -704,67 +767,72 @@ function createPlugin(babel) {
       // KEYWORDS: ex. disable | mandatory | selected | hidden
       if (propName && propValNode === null) {
         propsObj[propName] = true;
-        return;
       }
       // STRING LITERAL: ex: prop="yourProp"
       if (t.isStringLiteral(propValNode)) {
         propsObj[propName] = propValNode.value;
-        return;
       }
 
-      // NUMBER/EXP: ex: prop={123}
-      if (
-        t.isJSXExpressionContainer(propValNode) &&
-        t.isNumericLiteral(propValExp)
-      ) {
-        propsObj[propName] = propValExp.value;
-        return;
-      }
+      // PROP has a value inside a JSX Expression Container:
+      if (t.isJSXExpressionContainer(propValNode)) {
+        // NUMBER: ex: prop={123}
+        if (t.isNumericLiteral(propValExp)) {
+          propsObj[propName] = propValExp.value;
+        }
 
-      // OBJECT/EXP: ex: prop={{h: 40, w: 6}}
-      if (
-        t.isJSXExpressionContainer(propValNode) &&
-        t.isObjectExpression(propValExp)
-      ) {
-        propsObj[propName] = {};
-        propValExp.properties.forEach(
-          (prop) => (propsObj[propName][prop.key.name] = prop.value.value)
-        );
-        return;
-      }
-      // what about an expression container with an Array inside???
-      // Would we ever need this for SuiteScript??
+        // OBJECT: ex: prop={{h: 40, w: 6}}
+        if (t.isObjectExpression(propValExp)) {
+          propsObj[propName] = {};
+          propValExp.properties.forEach(
+            (prop) => (propsObj[propName][prop.key.name] = prop.value.value)
+          );
+        }
 
-      // BINDING/EXP: ex: prop={variable}
-      // Props w. Bindings in function lexical scope
-      if (
-        t.isJSXExpressionContainer(propValNode) &&
-        t.isIdentifier(propValExp)
-      ) {
-        const identifiersObj = path.scope.bindings;
-        if (Object.keys(identifiersObj).length !== 0) {
-          if (!identifiersObj[propValExp.name]) {
-            propsObj[propName] = propValExp.name;
-          } else {
-            let bindingIdNode = identifiersObj[propValExp.name].path.node;
+        // ARRAY: ex: prop={["1", "2", "3"]}
+        // what about an expression container with an Array inside???
 
-            // Does binding have an array of properties?
-            // ie. its a binding to an object with properties
-            if (
-              bindingIdNode.init.properties &&
-              bindingIdNode.init.properties.length > 0
-            ) {
-              propsObj[propName] = {};
-              bindingIdNode.init.properties.forEach((prop) => {
-                propsObj[propName][prop.key.name] = prop.value.value;
-              });
-              // otherwise, just assign the value
+        // BINDING: ex: prop={variable} (within lexical scope)
+        if (t.isIdentifier(propValExp)) {
+          const identifiersObj = path.scope.bindings; // get bindings
+          if (Object.keys(identifiersObj).length !== 0) {
+            // console.log("identifiersObj", identifiersObj);
+            // console.log("propValExp", propValExp);
+            // if the prop variable is NOT a bindi
+            if (!identifiersObj[propValExp.name]) {
+              propsObj[propName] = propValExp.name;
             } else {
-              propsObj[propName] = bindingIdNode.init.value;
+              let bindingIdNode = identifiersObj[propValExp.name].path.node;
+              // console.log("bindingIdNode", bindingIdNode);
+              // Does binding have an array of properties?
+              // ie. its a binding to an object with properties
+              if (
+                bindingIdNode.init.properties &&
+                bindingIdNode.init.properties.length > 0
+              ) {
+                propsObj[propName] = {};
+                bindingIdNode.init.properties.forEach((prop) => {
+                  propsObj[propName][prop.key.name] = prop.value.value;
+                });
+                // if binding has elements therefore binding is Array
+              } else if (
+                bindingIdNode.init.elements &&
+                bindingIdNode.init.elements.length > 0
+              ) {
+                // assign to propsObj as array
+                // loop through the array
+                propsObj[propName] = [];
+                // console.log("propsObj", propsObj);
+
+                handleArrayBinding(
+                  bindingIdNode.init.elements,
+                  propsObj,
+                  propName
+                );
+                // console.log(propsObj);
+              }
             }
           }
         }
-        return;
       }
     });
     // once props have been handled, pass to generateVarId's:
@@ -781,11 +849,15 @@ function createPlugin(babel) {
       propsObj.varName = varName;
       propsObj.id = id;
     }
+    if (compType === "Search") {
+      searchObj.props = propsObj;
+      //console.log("searchObj", searchObj);
+    }
     return propsObj;
   }
 
   function generateVarIdObj(string, type, path) {
-    console.log("type:", type);
+    // console.log("type:", type);
     const stringObj = {
       varName: "",
       id: "custpage",
@@ -819,47 +891,44 @@ function createPlugin(babel) {
   //////////////////////////////////////////////
   /* Gets the SS syntax by passing arguments into methods returning dynamic string literals */
   function getSSComponentCalls(currNode) {
-    // PAGE COMPONENT:
-    if (currNode.compType === "Search") {
-      console.log("SEARCH", currNode);
-      createSearch(currNode);
+    // Search/Select guard clause:
+    if (
+      currNode.compType === "Search" ||
+      (currNode.parentType === "Search" && currNode.compType === "Select")
+    ) {
+      return;
     }
-    if (currNode.compType !== "Search") {
-      if (SS[currNode.compType].attributes.isPage) {
-        suiteScriptSyntax = `\n${SS[currNode.compType].add(
-          currNode.props.arguments
-        )}`;
-      } else {
-        // COMPONENT VARIANTS:
-        if (currNode.variant) {
-          suiteScriptSyntax += `\n${SS[currNode.compType].props.methods[
-            currNode.variant
-          ](currNode.props.arguments)}`;
-        } else {
-          // NON PAGE COMPONENT:
-          suiteScriptSyntax += `\n${SS[currNode.compType].add(
-            currNode.props.arguments
-          )}`;
-          // HANDLE OTHER SS METHOD/PROPERTY CALLS:
-          if (Object.keys(currNode.props.methods).length > 0) {
-            for (let [key, value] of Object.entries(currNode.props.methods)) {
-              // console.log("key:", key, "value:", value);
-              suiteScriptSyntax += `\n${SS[currNode.compType].props.methods[
-                key
-              ](currNode.props.arguments, value)}`;
-            }
-          }
-        }
-      }
-      // if component is Search:
-    } else searchSyntax = createSearch(currNode);
 
-    //console.log("suiteScriptSyntax:", suiteScriptSyntax);
+    // REGULAR COMPONENT:
+    suiteScriptSyntax += `\n${SS[currNode.compType].add(
+      currNode.props.arguments
+    )}`;
+
+    // COMPONENT VARIANT?:
+    if (currNode.variant) {
+      suiteScriptSyntax += `\n${SS[currNode.compType].props.methods[
+        currNode.variant
+      ](currNode.props.arguments)}`;
+    }
+
+    // HANDLE OTHER SS METHOD/PROPERTY CALLS:
+    if (Object.keys(currNode.props.methods).length > 0) {
+      for (let [key, value] of Object.entries(currNode.props.methods)) {
+        // console.log("key:", key, "value:", value);
+        suiteScriptSyntax += `\n${SS[currNode.compType].props.methods[key](
+          currNode.props.arguments,
+          value
+        )}`;
+      }
+    }
     return suiteScriptSyntax;
   }
-
   let suiteScriptSyntax = ""; // the syntax string we're populating
-  let searchSyntax = ""; // search syntax comes AFTER API component calls
+  let searchObj = {
+    props: {},
+    children: [],
+    searchSyntax: "", // search syntax comes AFTER SS component calls
+  };
   let pageVar = ""; // global variable, needs to be accessible by Node.js
   let tabCount = 0; // tracks tabs, user gets informed if a Form has under 2 tabs
 

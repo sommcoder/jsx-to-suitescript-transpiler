@@ -1,24 +1,30 @@
 {
   "name": "jsx-to-ss",
-  "version": "1.0.6",
-  "description": "transpiles JSX syntax into NetSuite-readable SuiteScript 2.0 API calls",
+  "version": "1.1.8",
+  "description": "Transpiles JSX syntax into NetSuite-readable SuiteScript 2.0 API calls",
   "main": "index.js",
   "scripts": {
-    "jssx": "node ./lib/index.js",
-    "jssx dev": "node ./lib/index.js"
+    "jssx": "node ./lib/cli.js"
+  },
+  "bin": {
+    "jssx": "./lib/cli.js"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/sommcoder/jsx-to-suitescript-transpiler"
   },
   "type": "module",
+  "keywords": [
+    "SuiteScript",
+    "NetSuite",
+    "JSX",
+    "Suitelet",
+    "UI"
+  ],
   "author": "Brian Davies",
   "license": "ISC",
   "dependencies": {
+    "@babel/core": "^7.22.1",
     "@babel/plugin-syntax-jsx": "^7.18.6"
-  },
-  "devDependencies": {
-    "@babel/cli": "^7.21.0",
-    "@babel/core": "^7.21.0"
   }
 }
