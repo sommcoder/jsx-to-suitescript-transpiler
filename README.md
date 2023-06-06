@@ -368,7 +368,7 @@ jssx <fileName>.jsx
 
 Creating a UI for a Suitelet is nice and all but ONLY creating a static UI isn't useful in many situations. Often, we want fields to be populated dynamically using something like a Saved Search in NetSuite.
 
-Enter the the <Search> component. Search can allow us to populate our Fields and declare them simultaneously if we wrap <Field>'s in a <Search> component. Only wrap the components you need to populate, and provide the column prop on the Field that you'd like to populate the search with.
+Enter the Search component. Search can allow us to populate our Fields and declare them simultaneously if we wrap Field's in a Search component. Only wrap the components you need to populate, and provide the column prop on the Field that you'd like to populate the search with.
 
 ```javascript
 const filters = [["item", "anyof", "name"], "AND", ["mainline", "is", "F"]];
