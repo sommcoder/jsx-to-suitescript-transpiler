@@ -352,7 +352,7 @@ Here is a table of **supported** SuiteScript components and their respective pro
 # Run using the following command in your terminal:
 
 ```
-npm run jssx <fileName>.jsx
+jssx <fileName>.jsx
 
 ```
 
