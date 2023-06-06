@@ -222,7 +222,7 @@ You'll get instance feedback once you enter the run command in your terminal.
 6. If you want to add a field to a Sublist, wrap the field in a sublist as its parent. If you want to add a field to the form the Field can be wrapped by a Tab or FieldGroup because in this instance the Field is added to the Page regardless.
 7. Every component MUST have properties (or "props") and they can never be duplicates or JSSX will throw an error
 
-# <Select> Component
+# Select Component
 
 In order to uphold our goal as a dev tool to allow for SuiteScript UI's to be more readable, we opted to create a new component which is essentially syntactic sugar for a Field.addSelectOptions(). By having a Select component in JSSX, we believe this provides better readability to the developer.
 
