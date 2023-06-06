@@ -28,6 +28,9 @@ Create your Suitelet UI in a .jsx file in your project directory and run to tran
 jssx <fileName>.jsx
 ```
 
+Check out the Github repo for better doc readability:
+[Github Repo](https://github.com/sommcoder/jsx-to-suitescript-transpiler)
+
 # so, what is JSX?
 
 [Official JSX docs](https://facebook.github.io/jsx/)
