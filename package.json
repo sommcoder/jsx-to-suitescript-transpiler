@@ -7,7 +7,7 @@
     "jssx": "node ./lib/cli.js"
   },
   "bin": {
-    "jssx": "./lib/cli.js"
+    "jssx": "node ./lib/cli.js"
   },
   "repository": {
     "type": "git",
@@ -24,7 +24,9 @@
   "author": "Brian Davies",
   "license": "ISC",
   "dependencies": {
-    "@babel/core": "^7.22.1",
-    "@babel/plugin-syntax-jsx": "^7.18.6"
+    "@babel/core": "^7.22.1"
+  },
+  "devDependencies": {
+    "@babel/plugin-syntax-jsx": "^7.21.4"
   }
 }

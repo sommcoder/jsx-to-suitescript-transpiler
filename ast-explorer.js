@@ -6,7 +6,7 @@ function createPlugin(babel) {
   //////////////////////////// UTIL FUNCTIONS:
   const UTIL = {
     checkProps: (reqPropsArr, props) => {
-      reqPropsArr.forEach((prop) => {
+      reqPropsArr.forEach(prop => {
         if (!Object.keys(props).includes(prop)) {
           throw new Error(ERROR.missingRequiredProp(props.type, prop));
         }
@@ -17,26 +17,26 @@ function createPlugin(babel) {
 
   const SS = {
     Search: {
-      add: (search) => {
+      add: search => {
         // HANDLE SEARCH CREATE:
         let searchCompSyntax = `\nlet i = 0;\n\nsearch.create({\n   ${
-          search.props.type ? `type: '${search.props.type}',\n` : ""
+          search.props.type ? `type: '${search.props.type}',\n` : ''
         }   ${
-          search.props.title ? `title: '${search.props.title}',\n` : ""
+          search.props.title ? `title: '${search.props.title}',\n` : ''
         }    ${
           search.props.filters
-            ? `filters: [\n   ${search.props.filters.map((filter) => {
+            ? `filters: [\n   ${search.props.filters.map(filter => {
                 if (Array.isArray(filter)) {
-                  return `[${filter.map((el) => UTIL.isObject(el))}]`;
+                  return `[${filter.map(el => UTIL.isObject(el))}]`;
                 } else return UTIL.isObject(filter);
               })}\n],\n`
-            : ""
+            : ''
         }${
           search.children.length > 0
             ? `columns: [${search.children.map(
-                (child) => `'${child.props.arguments.column}'`
+                child => `'${child.props.arguments.column}'`
               )}],\n`
-            : ""
+            : ''
         }}).run().each((result) => {\n`;
 
         // console.log("searchCompSyntax:", searchCompSyntax);
@@ -44,7 +44,7 @@ function createPlugin(babel) {
 
         // HANDLE RESULTSET.EACH() TRAVERSAL:
         // FIELD CHILDREN
-        if (search.children.every((child) => child.compType === "Field")) {
+        if (search.children.every(child => child.compType === 'Field')) {
           search.children.map((child, i, arr) => {
             //  console.log("child", child.props.arguments);
             searchCompSyntax += `\n${
@@ -53,7 +53,7 @@ function createPlugin(babel) {
               child.props.arguments.id
             }',\n    line: i,\n    value: result.${
               // if type = result.getText(), else: result.getValue()
-              child.props.arguments.type === "text"
+              child.props.arguments.type === 'text'
                 ? `getText({\n   name: '${child.props.arguments.column}',\n}),`
                 : `getValue({\n    name: '${child.props.arguments.column}',\n}),`
             }
@@ -61,9 +61,9 @@ function createPlugin(babel) {
           });
         } else if (
           // SELECT CHILDREN
-          search.children.every((child) => child.compType === "Select")
+          search.children.every(child => child.compType === 'Select')
         ) {
-          search.children.map((child) => {
+          search.children.map(child => {
             searchCompSyntax += `\n${
               child.props.arguments.parentVar
             }.addSelectOptions({\n    ${
@@ -78,17 +78,17 @@ function createPlugin(babel) {
           });
         } else
           throw new Error(
-            "Every child of a Search component needs to either be all Field or all Select components exclusively"
+            'Every child of a Search component needs to either be all Field or all Select components exclusively'
           );
-        return searchCompSyntax + "\n\ni++\n\nreturn true;\n});"; // close the each() method
+        return searchCompSyntax + '\n\ni++\n\nreturn true;\n});'; // close the each() method
       },
       attributes: {
         isPage: false,
         isSearch: true,
         canBeSearched: false,
-        possibleChildren: ["Field", "Select"],
-        possibleParents: ["Sublist"],
-        possibleVariants: ["Field", "Select"],
+        possibleChildren: ['Field', 'Select'],
+        possibleParents: ['Sublist'],
+        possibleVariants: ['Field', 'Select'],
       },
       props: {
         variables: {
@@ -108,28 +108,28 @@ function createPlugin(babel) {
           fileId: null,
         },
         methods: {
-          save: (props) => {
+          save: props => {
             return ``;
           },
-          load: (props) => {
+          load: props => {
             return ``;
           },
         },
       },
     },
     Form: {
-      add: (props) => {
+      add: props => {
         return `const ${
           props.varName
         } = serverWidget.createForm({\n   title: '${props.title}',${
-          props.hideNav ? `\n   hideNavBar: true` : ""
+          props.hideNav ? `\n   hideNavBar: true` : ''
         }\n});`;
       },
       attributes: {
         isPage: true,
         isSearch: false,
         canBeSearched: false,
-        possibleChildren: ["Sublist", "Field", "Button", "Tab", "FieldGroup"],
+        possibleChildren: ['Sublist', 'Field', 'Button', 'Tab', 'FieldGroup'],
         possibleParents: null,
       },
       props: {
@@ -141,25 +141,25 @@ function createPlugin(babel) {
           fileId: null,
         },
         methods: {
-          module: (props) =>
+          module: props =>
             `${props.varName}.clientScriptModulePath = '${props.module}';`,
-          fileId: (props) =>
+          fileId: props =>
             `${props.varName}.clientScriptFileId = '${props.fileId}';`,
-          init: (props) => `
+          init: props => `
           ${props.varName}.addPageInitMessage(${props.init});
           `,
         },
       },
     },
     List: {
-      add: (props) => {
+      add: props => {
         return `const ${props.varName} = serverWidget.createList({\n   title: '${props.title}',\n});`;
       },
       attributes: {
         isPage: true,
         isSearch: false,
         canBeSearched: false,
-        possibleChildren: ["Column", "Row", "Button"],
+        possibleChildren: ['Column', 'Row', 'Button'],
         possibleParents: null,
       },
       props: {
@@ -174,11 +174,11 @@ function createPlugin(babel) {
       },
     },
     Assistant: {
-      add: (props) => {
+      add: props => {
         return `const ${
           props.varName
         } = serverWidget.createAssistant({\n   title: '${props.title}',${
-          props.navBar ? `\n   hideNavBar: true` : ""
+          props.navBar ? `\n   hideNavBar: true` : ''
         }\n});`;
       },
       attributes: {
@@ -186,12 +186,12 @@ function createPlugin(babel) {
         isSearch: false,
         canBeSearched: false,
         possibleChildren: [
-          "Sublist",
-          "Field",
-          "Button",
-          "Tab",
-          "FieldGroup",
-          "Step",
+          'Sublist',
+          'Field',
+          'Button',
+          'Tab',
+          'FieldGroup',
+          'Step',
         ],
         possibleParents: null,
       },
@@ -207,15 +207,15 @@ function createPlugin(babel) {
       },
     },
     Tab: {
-      add: (props) => {
+      add: props => {
         return `${props.pageVar}.addTab({\n   id: '${props.id}',\n    label: '${props.label}',\n});`;
       },
       attributes: {
         isPage: false,
         isSearch: false,
         canBeSearched: false,
-        possibleChildren: ["Field", "Button", "Sublist", "FieldGroup"],
-        possibleParents: ["Form", "List", "Assistant"],
+        possibleChildren: ['Field', 'Button', 'Sublist', 'FieldGroup'],
+        possibleParents: ['Form', 'List', 'Assistant'],
       },
       props: {
         variables: {
@@ -226,25 +226,25 @@ function createPlugin(babel) {
           tab: null,
         },
         methods: {
-          help: (props) => `${props.varName}.helpText = '${props.help}'`,
+          help: props => `${props.varName}.helpText = '${props.help}'`,
         },
       },
     },
     // PascalCase
     FieldGroup: {
-      add: (props) => {
+      add: props => {
         return `const ${props.varName} = ${
           props.pageVar
         }.addFieldGroup({\n     id: '${props.id}',\n      label: '${
           props.label
-        }',${props.parentId ? `\n      tab: '${props.parentId}'` : ""}\n});`;
+        }',${props.parentId ? `\n      tab: '${props.parentId}'` : ''}\n});`;
       },
       attributes: {
         isPage: false,
         isSearch: false,
         canBeSearched: false,
-        possibleChildren: ["Field", "Button"],
-        possibleParents: ["Form", "Assistant", "List", "Tab"],
+        possibleChildren: ['Field', 'Button'],
+        possibleParents: ['Form', 'Assistant', 'List', 'Tab'],
       },
       props: {
         variables: {
@@ -256,32 +256,32 @@ function createPlugin(babel) {
           parentId: null,
         },
         methods: {
-          single: (props) => `${props.varName}.isSingleColumn;`,
-          collapsible: (props) => `${props.varName}.isCollapsible = true;`,
-          collapsed: (props) => `${props.varName}.isCollapsed;`,
-          borderHidden: (props) => `${props.varName}.isBorderHidden = true;`,
+          single: props => `${props.varName}.isSingleColumn;`,
+          collapsible: props => `${props.varName}.isCollapsible = true;`,
+          collapsed: props => `${props.varName}.isCollapsed;`,
+          borderHidden: props => `${props.varName}.isBorderHidden = true;`,
         },
       },
     },
     Sublist: {
-      add: (props) => {
+      add: props => {
         return `const ${props.varName} = ${
           props.pageVar
         }.addSublist({\n    id: '${props.id}',\n    label: '${props.label}',${
-          props.type ? `\n type: ${props.type},` : ""
-        }${props.parentId ? `\n    tab: '${props.parentId}'` : ""}\n});`;
+          props.type ? `\n type: ${props.type},` : ''
+        }${props.parentId ? `\n    tab: '${props.parentId}'` : ''}\n});`;
       },
       attributes: {
         isPage: false,
         isSearch: false,
         canBeSearched: true,
-        possibleChildren: ["Field", "Button", "Search"],
-        possibleParents: ["Form", "Assistant", "List", "Tab"],
+        possibleChildren: ['Field', 'Button', 'Search'],
+        possibleParents: ['Form', 'Assistant', 'List', 'Tab'],
       },
       props: {
         // props are what are encapsulated in eachJSSX component tag
         variables: {
-          possibleTypes: ["inlineeditor", "editor", "list", "staticlist"],
+          possibleTypes: ['inlineeditor', 'editor', 'list', 'staticlist'],
           label: null, // what the user wants to call the component
           type: null, // the type of component
           id: null, // the autogenerated id
@@ -292,13 +292,13 @@ function createPlugin(babel) {
           pageVar: null,
         },
         methods: {
-          markAll: (props) => `${props.varName}.addMarkAllButtons();`,
+          markAll: props => `${props.varName}.addMarkAllButtons();`,
         },
       },
     },
     Field: {
-      add: (props) => {
-        const requiredProps = ["label", "type"];
+      add: props => {
+        const requiredProps = ['label', 'type'];
         UTIL.checkProps(requiredProps, props);
         return `const ${props.varName} = ${
           props.parentVar
@@ -306,46 +306,46 @@ function createPlugin(babel) {
           props.label
             ? `\n   label: '${props.label}'`
             : `\n    label: '${props.varName}'`
-        },${props.type ? `\n    type: '${props.type}',` : ""}${
-          props.parentId ? `\n   container: '${props.parentId}',` : ""
-        }${props.source ? `\n    source: '${props.source}',` : ""}\n});`;
+        },${props.type ? `\n    type: '${props.type}',` : ''}${
+          props.parentId ? `\n   container: '${props.parentId}',` : ''
+        }${props.source ? `\n    source: '${props.source}',` : ''}\n});`;
       },
       attributes: {
         isPage: false,
         isSearch: false,
         canBeSearched: true,
-        possibleChildren: ["Select", "Search"],
+        possibleChildren: ['Select', 'Search'],
         possibleParents: [
-          "Form",
-          "Assistant",
-          "Tab",
-          "Sublist",
-          "List",
-          "FieldGroup",
+          'Form',
+          'Assistant',
+          'Tab',
+          'Sublist',
+          'List',
+          'FieldGroup',
         ],
-        possibleVariants: ["secret", "totalling", "unique"],
+        possibleVariants: ['secret', 'totalling', 'unique'],
         // types are for normal Fields, type props on a variant component will throw a redundancy error and the type shouldn't transpile nor should the return of an add() call
         typeRules: {
           restrictSublistParent: [
-            "checkbox",
-            "datetime",
-            "datetimetz",
-            "richtext",
-            "longtext",
-            "multiselect",
-            "help",
-            "file",
-            "radio",
+            'checkbox',
+            'datetime',
+            'datetimetz',
+            'richtext',
+            'longtext',
+            'multiselect',
+            'help',
+            'file',
+            'radio',
           ],
           file: {
             permissions: {
-              parent: ["Form", "Assistant"],
+              parent: ['Form', 'Assistant'],
             },
           },
           image: {
             permissions: {
-              parentType: ["staticlist"],
-              parent: ["Sublist", "List", "Form"],
+              parentType: ['staticlist'],
+              parent: ['Sublist', 'List', 'Form'],
             },
           },
         },
@@ -367,7 +367,7 @@ function createPlugin(babel) {
         },
         methods: {
           // !! Credential is Currently untested!!!!
-          credential: (props) => {
+          credential: props => {
             return `const ${props.varName} = ${
               props.pageVar
             }.addCredentialField({\n    id: '${
@@ -375,16 +375,16 @@ function createPlugin(babel) {
             }',\n    restrictToDomains: '${props.domain}',\n   ${
               props.scriptIds
                 ? `restrictToScriptIds : '${props.scriptIds}',`
-                : ""
+                : ''
             }${
               props.restUser
                 ? `\n   restrictToCurrentUser : '${props.restUser}',`
-                : ""
+                : ''
             }${
-              props.parentId ? `\n   container: '${props.parentId}'` : ""
+              props.parentId ? `\n   container: '${props.parentId}'` : ''
             }\n})`;
           },
-          breakType: (props) => {
+          breakType: props => {
             return `${props.varName}.updateBreakType({\n    breakType: ${props.breakType}\n});`;
           },
           // example:    size={height: 40, width: 50}
@@ -393,28 +393,28 @@ function createPlugin(babel) {
               props.h || value.h
             },\n    width: ${props.w || value.w},\n  });`;
           },
-          layout: (props) => {},
-          alias: (props) => {},
+          layout: props => {},
+          alias: props => {},
           def: (props, value) => `${props.varName}.defaultValue = '${value}';`,
           help: (props, value) => {
             return `${props.varName}.setHelpText({\n   help: '${value}'\n});`;
           },
-          mandatory: (props) =>
+          mandatory: props =>
             `${props.field}.isMandatory = ${props.mandatory};`,
-          link: (props) => `${props.varName}.linkText = '${props.link}';`,
-          max: (props) => `${props.field}.maxLength = ${props.max};`,
-          padding: (props) => `${props.varName}.padding = ${props.padding};`,
+          link: props => `${props.varName}.linkText = '${props.link}';`,
+          max: props => `${props.field}.maxLength = ${props.max};`,
+          padding: props => `${props.varName}.padding = ${props.padding};`,
           // secret is a special variant of field
           // it's parent MUST BE a page a secret field cannot be nested in non-page components
 
           // special Field component variants:
           // if special, ignore .add()
           // if nested in a fieldGroup or Tab, this parent will be inferred as the container and props.parentId will be the value container is given
-          secret: (props) => {
-            if (props.hasOwnProperty("type")) {
+          secret: props => {
+            if (props.hasOwnProperty('type')) {
               console.log(ERROR.redundantProp(props.type, props.compType));
             }
-            const reqProps = ["label", "restScriptIds"];
+            const reqProps = ['label', 'restScriptIds'];
             UTIL.checkProps(reqProps, props);
 
             return `const ${props.varName} = ${
@@ -424,20 +424,20 @@ function createPlugin(babel) {
             },\n    ${
               props.scriptIds
                 ? `restrictToScriptIds: '${props.restScriptIds}',`
-                : ""
+                : ''
             }\n   ${
               props.restrict
                 ? `restrictToCurrentUser: '${props.restrict}',`
-                : ""
+                : ''
             }\n   ${
-              props.parentId ? `container: '${props.parentId}',` : ""
+              props.parentId ? `container: '${props.parentId}',` : ''
             }\n});`;
           },
           // the id of the field:
-          totalling: (props) => {
+          totalling: props => {
             return `${props.parentVar}.updateTotallingField({\n   id: '${props.id}',\n})`;
           },
-          unique: (props) => {
+          unique: props => {
             return `${props.parentVar}.updateUniqueFieldId({\n    id: '${props.id}',\n})`;
           },
         },
@@ -445,11 +445,11 @@ function createPlugin(babel) {
     },
 
     Select: {
-      add: (props) => {
+      add: props => {
         return `${props.parentVar}.addSelectOption({\n    value : '${
           props.value
         }',\n   text : '${props.text}',${
-          props.isSelected ? `\n   isSelected: true` : ""
+          props.isSelected ? `\n   isSelected: true` : ''
         }\n});`;
       },
       attributes: {
@@ -457,7 +457,7 @@ function createPlugin(babel) {
         isSearch: false,
         canBeSearched: false,
         possibleChildren: null,
-        possibleParents: ["Field"],
+        possibleParents: ['Field'],
       },
       props: {
         variables: {
@@ -472,7 +472,7 @@ function createPlugin(babel) {
       },
     },
     Button: {
-      add: (props) => {
+      add: props => {
         return `const ${props.varName} = ${
           props.parentVar
         }.addButton({\n   id: '${props.id}',${
@@ -480,9 +480,9 @@ function createPlugin(babel) {
             ? `\n   label: '${props.label}'`
             : `\n    label: '${props.id}'`
         },${
-          props.pageVar === "Form" && props.fn
+          props.pageVar === 'Form' && props.fn
             ? `\n    functionName: ${props.fn}`
-            : ""
+            : ''
         }\n});`;
       },
       attributes: {
@@ -490,8 +490,8 @@ function createPlugin(babel) {
         isSearch: false,
         canBeSearched: false,
         possibleChildren: null,
-        possibleParents: ["List", "Form", "Assistant", "Sublist"],
-        possibleVariants: ["hidden", "submit", "reset"],
+        possibleParents: ['List', 'Form', 'Assistant', 'Sublist'],
+        possibleVariants: ['hidden', 'submit', 'reset'],
       },
       props: {
         variables: {
@@ -504,13 +504,13 @@ function createPlugin(babel) {
           fn: null,
         },
         methods: {
-          disabled: (props) =>
+          disabled: props =>
             `${props.buttonVar}.clientScriptModulePath = '${props.path}';`,
-          hidden: (props) =>
+          hidden: props =>
             `${props.buttonVar}.clientScriptFileId = '${props.id}';`,
           // if submit, id disregarded, label accepted only, default: "Submit Button"
-          submit: (props) => {
-            return `const ${props.varName || "submitBtn"} = ${
+          submit: props => {
+            return `const ${props.varName || 'submitBtn'} = ${
               props.parentVar
             }.addSubmitButton({\n    ${
               props.label ? `label: '${props.label}'` : `label: "Submit Button"`
@@ -518,16 +518,16 @@ function createPlugin(babel) {
           },
           // if reset, id disregarded, label accepted only, default: "Reset Button"
           // parent MUST be a Page
-          reset: (props) => {
-            return `const ${props.varName || "resetBtn"} = ${
+          reset: props => {
+            return `const ${props.varName || 'resetBtn'} = ${
               props.parentVar
             }.addResetButton({\n    ${
               props.label ? `label: '${props.label}'` : `label: "Reset Button"`
             },\n});`;
           },
           // if reset, id AND label disregarded,
-          refresh: (props) =>
-            `const ${props.varName || "refreshBtn"} = ${
+          refresh: props =>
+            `const ${props.varName || 'refreshBtn'} = ${
               props.parentVar
             }.addRefreshButton();`,
         },
@@ -535,7 +535,7 @@ function createPlugin(babel) {
     },
     // creates the Page, whether thats a Form, List or Assistant
     // always gets called in the plugin
-    Write: (pageVar) => {
+    Write: pageVar => {
       return `context.response.writePage({\n    pageObject: '${pageVar}'\n});`;
     },
   };
@@ -544,17 +544,17 @@ function createPlugin(babel) {
   ////////////////////////// UTILITY FUNCTIONS ///////////////////////
 
   const ERROR = {
-    illegalChar: (label) =>
+    illegalChar: label =>
       `\nJSSX ERROR: jsx label: ${label} contains special characters that are not permitted`,
-    invalidCase: (compType) =>
+    invalidCase: compType =>
       `\nJSSX ERROR: jsx compType: ${compType} needs to be in PascalCase with the first letter capitalized!`,
-    invalidChild: (compType) =>
+    invalidChild: compType =>
       `\nJSSX ERROR: there is an invalid child in the component: ${compType}`,
     invalidParent: (compType, parentType) =>
       `\nJSSX ERROR: Parent type: ${parentType} is not a valid parentType for: "${compType}"`,
-    invalidComp: (compType) =>
+    invalidComp: compType =>
       `\nJSSX ERROR: the jsx component: ${compType}, is NOT included in the ss library. Refer to docs to see included components`,
-    noProps: (compType) =>
+    noProps: compType =>
       `\nJSSX ERROR: jssx compType: ${compType} does not have any attributes/props and therefore is void! Components must have label/title at the very least!`,
     invalidProp: (propName, compType) =>
       `\nJSSX ERROR: The prop called: '${propName}' is NOT a valid prop in the component: '${compType}'`,
@@ -566,7 +566,7 @@ function createPlugin(babel) {
       `\nJSSX ERROR: The "${type}" component is missing a required prop called "${prop}", please refer to the JSSX and/or NetSuite docs`,
     insufficientTabs: () =>
       `\nJSSX ERROR: JSSX successfully transpiled, however there aren't enough tab components for this Form. \nThere must be a minimum of 2 tabs for NetSuite to render Tabs on a Form.`,
-    notValidFileArg: (argv) =>
+    notValidFileArg: argv =>
       `\nNODE ERROR: You must specify a .jsx file after the npm command, ex: 'npm run jssx <file>.jsx'. There were no valid file name arguments passed in the following arguments: ${argv}`,
     noFileAccess: (jsxFile, err) =>
       `\nNODE ERROR: Cannot retrieve file: ${jsxFile}. Node error: ${err}`,
@@ -579,7 +579,7 @@ function createPlugin(babel) {
   function handleNode(path) {
     // CHILDREN
     path.node.children = path.node.children.filter(
-      (child) => child.type !== "JSXText"
+      child => child.type !== 'JSXText'
     );
     //console.log("path.node.children:", path.node.children);
     //console.log(path.node);
@@ -601,15 +601,15 @@ function createPlugin(babel) {
     let compObj = SS[path.node.compType];
     assignProps(compObj, path);
 
-    let parentPath = path.findParent((path) => path.isJSXElement()) || null;
+    let parentPath = path.findParent(path => path.isJSXElement()) || null;
     // console.log("BEFORE parentPath", parentPath);
     // PARENT: only if JSXElement
-    if (parentPath && parentPath.node.compType === "Search") {
+    if (parentPath && parentPath.node.compType === 'Search') {
       // add this component to searchObj for processing after AST traversal
       searchObj.children.push(path.node);
 
       // re-assign to searches parent:
-      parentPath = parentPath.findParent((path) => path.isJSXElement()) || null;
+      parentPath = parentPath.findParent(path => path.isJSXElement()) || null;
       // console.log("AFTER parentPath", parentPath);
     }
     if (parentPath) validateParent(parentPath, compObj, path);
@@ -635,7 +635,7 @@ function createPlugin(babel) {
       }
       // assign variables to node.arguments:
       if (compObj.props.variables.hasOwnProperty(key))
-        if (path.node.props.arguments.parentType === "Search") {
+        if (path.node.props.arguments.parentType === 'Search') {
           // add prop to searchObj if parent is Search
           searchObj.props[key] = value;
         }
@@ -648,7 +648,7 @@ function createPlugin(babel) {
 
   function validateChildren(childNamesArr, compType, path) {
     if (
-      !childNamesArr.every((child) =>
+      !childNamesArr.every(child =>
         SS[compType].attributes.possibleChildren.includes(
           child.openingElement.name.name
         )
@@ -675,7 +675,7 @@ function createPlugin(babel) {
     }
 
     // if Field, can only have certain parents when it is a certain type
-    if (path.node.compType === "Field") {
+    if (path.node.compType === 'Field') {
     }
     /*
       
@@ -686,8 +686,8 @@ function createPlugin(babel) {
     path.node.compType;
 
     if (
-      path.node.parentNode.compType === "Tab" ||
-      path.node.parentNode.compType === "FieldGroup"
+      path.node.parentNode.compType === 'Tab' ||
+      path.node.parentNode.compType === 'FieldGroup'
     ) {
       // Only if parent is Tab of FieldGroup do we need to get and assign parentId to the current path.node
       path.node.props.arguments.parentId =
@@ -712,7 +712,7 @@ function createPlugin(babel) {
       if (t.isObjectExpression(el)) {
         //  console.log("is object expression");
         propsObj[propName].push({}); // add an object to the propsObj array
-        el.properties.forEach((prop) => {
+        el.properties.forEach(prop => {
           // what if prop has a value of a binding?
           if (t.isIdentifier(prop)) {
             // console.log(" is identifier");
@@ -726,7 +726,7 @@ function createPlugin(babel) {
         //  console.log("is array expression");
         //   console.log(el);
         propsObj[propName].push([
-          ...el.elements.map((e) => {
+          ...el.elements.map(e => {
             if (t.isIdentifier(e)) return { identifier: e.name };
             else return e.value;
           }),
@@ -745,7 +745,7 @@ function createPlugin(babel) {
     // props need to be handled depending on their type, binding and whether they're wrapped in a JSX Expression and the combinations thereof
     let propsObj = {};
 
-    propsArr.forEach((prop) => {
+    propsArr.forEach(prop => {
       // attributes of a prop:
       const propName = prop.name.name;
       const propValNode = prop.value;
@@ -784,7 +784,7 @@ function createPlugin(babel) {
         if (t.isObjectExpression(propValExp)) {
           propsObj[propName] = {};
           propValExp.properties.forEach(
-            (prop) => (propsObj[propName][prop.key.name] = prop.value.value)
+            prop => (propsObj[propName][prop.key.name] = prop.value.value)
           );
         }
 
@@ -810,7 +810,7 @@ function createPlugin(babel) {
                 bindingIdNode.init.properties.length > 0
               ) {
                 propsObj[propName] = {};
-                bindingIdNode.init.properties.forEach((prop) => {
+                bindingIdNode.init.properties.forEach(prop => {
                   propsObj[propName][prop.key.name] = prop.value.value;
                 });
                 // if binding has elements therefore binding is Array
@@ -849,7 +849,7 @@ function createPlugin(babel) {
       propsObj.varName = varName;
       propsObj.id = id;
     }
-    if (compType === "Search") {
+    if (compType === 'Search') {
       searchObj.props = propsObj;
       //console.log("searchObj", searchObj);
     }
@@ -859,15 +859,15 @@ function createPlugin(babel) {
   function generateVarIdObj(string, type, path) {
     // console.log("type:", type);
     const stringObj = {
-      varName: "",
-      id: "custpage",
+      varName: '',
+      id: 'custpage',
     };
     const regex = /^[a-zA-Z_\s]+$/;
     if (regex.test(string)) {
       string
         .trim()
         .toLowerCase()
-        .split(" ")
+        .split(' ')
         .forEach((word, i, arr) => {
           if (i !== 0) {
             // all words except 1st get their 1st letter capitalized:
@@ -893,8 +893,8 @@ function createPlugin(babel) {
   function getSSComponentCalls(currNode) {
     // Search/Select guard clause:
     if (
-      currNode.compType === "Search" ||
-      (currNode.parentType === "Search" && currNode.compType === "Select")
+      currNode.compType === 'Search' ||
+      (currNode.parentType === 'Search' && currNode.compType === 'Select')
     ) {
       return;
     }
@@ -923,22 +923,22 @@ function createPlugin(babel) {
     }
     return suiteScriptSyntax;
   }
-  let suiteScriptSyntax = ""; // the syntax string we're populating
+  let suiteScriptSyntax = ''; // the syntax string we're populating
   let searchObj = {
     props: {},
     children: [],
-    searchSyntax: "", // search syntax comes AFTER SS component calls
+    searchSyntax: '', // search syntax comes AFTER SS component calls
   };
-  let pageVar = ""; // global variable, needs to be accessible by Node.js
+  let pageVar = ''; // global variable, needs to be accessible by Node.js
   let tabCount = 0; // tracks tabs, user gets informed if a Form has under 2 tabs
 
   const compStack = [];
   return {
-    name: "jssx",
+    name: 'jssx',
     visitor: {
       JSXElement(path) {
         let compType = path.node.openingElement.name.name;
-        if (compType === "Tab") {
+        if (compType === 'Tab') {
           tabCount++; // tab tracking
         }
         path.node.compType = compType;
