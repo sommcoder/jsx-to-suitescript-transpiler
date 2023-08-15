@@ -1,13 +1,13 @@
 {
   "name": "jsx-to-ss",
-  "version": "1.2.4",
+  "version": "1.2.9",
   "description": "Transpiles JSX syntax into NetSuite-readable SuiteScript 2.0 API calls",
-  "main": "index.js",
+  "main": "lib/cli.js",
   "scripts": {
     "jssx": "node ./lib/cli.js"
   },
   "bin": {
-    "jssx": "cd ./node_modules && npm link && node ./lib/cli.js"
+    "jssx": "lib/cli.js"
   },
   "repository": {
     "type": "git",
