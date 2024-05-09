@@ -1,3 +1,11 @@
+<!--
+<style>
+table {
+  width: 100%;
+}
+</style>
+-->
+
 # "JSSX" - JSX to SuiteScript Transpiler & Dev Tool using Babel
 
 "JSSX" brings Component-based UI development to Netsuite.
